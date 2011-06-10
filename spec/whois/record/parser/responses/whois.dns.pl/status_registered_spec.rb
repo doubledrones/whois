@@ -63,4 +63,12 @@ describe Whois::Record::Parser::WhoisDnsPl, "status_registered.expected" do
       @parser.nameservers[1].name.should == "ns1.google.com"
     end
   end
+  context "#registrar" do
+    it do
+      @parser.registrar.should be_a(_registrar)
+      @parser.registrar.id.should           == "Markmonitor, Inc."
+      @parser.registrar.name.should         == "Markmonitor, Inc."
+      @parser.registrar.organization.should be_nil
+    end
+  end
 end

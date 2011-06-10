@@ -70,6 +70,15 @@ module Whois
           end
         end
 
+        property_supported :registrar do
+          if content_for_scanner =~ /REGISTRAR:\s+(.*)\n/
+            Whois::Record::Registrar.new(
+              :id => $1,
+              :name => $1
+            )
+          end
+        end
+
       end
 
     end

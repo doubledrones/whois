@@ -67,4 +67,9 @@ describe Whois::Record::Parser::WhoisTwnicNetTw, "status_registered.expected" do
       @parser.nameservers[3].name.should == "ns4.google.com"
     end
   end
+  context "#registration_service_provider" do
+    it do
+      @parser.registration_service_provider.should == "Markmonitor, Inc."
+    end
+  end
 end

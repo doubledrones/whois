@@ -86,6 +86,11 @@ module Whois
           end
         end
 
+        property_supported :registration_service_provider do
+          if content_for_scanner =~ /Registration Service Provider:\s+(.*)\n/
+            $1
+          end
+        end
 
         # Initializes a new {Scanners::Verisign} instance
         # passing the {Whois::Record::Parser::Base#content_for_scanner}

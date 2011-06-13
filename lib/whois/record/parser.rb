@@ -36,6 +36,7 @@ module Whois
         :registrar,
         :registrant_contacts, :admin_contacts, :technical_contacts,
         :nameservers,
+        :registration_service_provider,
       ]
 
 

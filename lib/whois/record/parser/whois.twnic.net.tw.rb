@@ -67,6 +67,12 @@ module Whois
           end
         end
 
+        property_supported :registration_service_provider do
+          if content_for_scanner =~ /Registration Service Provider:\s+(.*)\n/
+            $1
+          end
+        end
+
       end
 
     end

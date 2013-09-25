@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,20 +15,20 @@ require 'whois/record/parser/whois.tonic.to.rb'
 
 describe Whois::Record::Parser::WhoisTonicTo, "response_incomplete.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.tonic.to/response_incomplete.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#status" do
     it do
-      @parser.status.should == :incomplete
+      subject.status.should == :incomplete
     end
   end
-  context "#response_incomplete?" do
+  describe "#response_incomplete?" do
     it do
-      @parser.response_incomplete?.should == true
+      subject.response_incomplete?.should == true
     end
   end
 end

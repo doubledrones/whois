@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,15 +15,15 @@ require 'whois/record/parser/whois.cat.rb'
 
 describe Whois::Record::Parser::WhoisCat, "property_status_ok.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.cat/property_status_ok.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#status" do
     it do
-      @parser.status.should == ["ok"]
+      subject.status.should == ["ok"]
     end
   end
 end

@@ -3,11 +3,13 @@
 #
 # An intelligent pure Ruby WHOIS client and parser.
 #
-# Copyright (c) 2009-2011 Simone Carletti <weppos@weppos.net>
+# Copyright (c) 2009-2013 Simone Carletti <weppos@weppos.net>
 #++
 
 
 require 'ipaddr'
+require 'json'
+require 'whois/server/adapters/base'
 
 
 module Whois
@@ -24,12 +26,12 @@ module Whois
     # customized to handle WHOIS queries for a type or a group of servers.
     module Adapters
       autoload :Base,             "whois/server/adapters/base"
+      autoload :Arin,             "whois/server/adapters/arin"
       autoload :Arpa,             "whois/server/adapters/arpa"
       autoload :Afilias,          "whois/server/adapters/afilias"
       autoload :Formatted,        "whois/server/adapters/formatted"
       autoload :None,             "whois/server/adapters/none"
       autoload :NotImplemented,   "whois/server/adapters/not_implemented"
-      autoload :Pir,              "whois/server/adapters/pir"
       autoload :Standard,         "whois/server/adapters/standard"
       autoload :Verisign,         "whois/server/adapters/verisign"
       autoload :Web,              "whois/server/adapters/web"
@@ -48,8 +50,21 @@ module Whois
     #
     # @return [void]
     def self.load_definitions
-      Dir[File.dirname(__FILE__) + '/definitions/*.rb'].each { |file| load(file) }
+      Dir[File.expand_path("../../../data/*.json", __FILE__)].each { |f| load_json(f) }
     end
+
+    # Loads the definitions from a JSON file.
+    #
+    # @param  [String] file The path to the definition file.
+    #
+    # @return [void]
+    def self.load_json(file)
+      type = File.basename(file, File.extname(file)).to_sym
+      JSON.load(File.read(file)).each do |allocation, settings|
+        define(type, allocation, settings.delete("host"), Hash[settings.map { |k,v| [k.to_sym, v] }])
+      end
+    end
+
 
     # Lookup and returns the definition list for given <tt>type</tt>,
     # or all definitions if <tt>type</tt> is <tt>nil</tt>.
@@ -120,7 +135,7 @@ module Whois
     #   # Define a new server with a custom adapter and options
     #   Whois::Server.define :tld, ".ar", nil,
     #     :adapter => Whois::Server::Adapters::Web,
-    #     :web => "http://www.nic.ar/"
+    #     :url => "http://www.nic.ar/"
     #
     def self.define(type, allocation, host, options = {})
       @@definitions[type] ||= []
@@ -164,7 +179,9 @@ module Whois
     #
     def self.factory(type, allocation, host, options = {})
       options = options.dup
-      (options.delete(:adapter) || Adapters::Standard).new(type, allocation, host, options)
+      adapter = options.delete(:adapter) || Adapters::Standard
+      adapter = Adapters.const_get(camelize(adapter)) unless adapter.respond_to?(:new)
+      adapter.new(type, allocation, host, options)
     end
 
 
@@ -218,27 +235,41 @@ module Whois
         return server
       end
 
-      # Gave Over
+      # ASN match
+      if matches_asn?(string)
+        return find_for_asn(string)
+      end
+
+      # Game Over
       raise ServerNotFound, "Unable to find a WHOIS server for `#{string}'"
     end
 
 
-    private
+  private
 
-      def self.matches_tld?(string)
-        string =~ /^\.(xn--)?[a-z0-9]+$/
-      end
-
-      def self.matches_ip?(string)
-        valid_ipv4?(string) || valid_ipv6?(string)
-      end
-
-      def self.matches_email?(string)
-        string =~ /@/
-      end
+    def self.camelize(string)
+      string.to_s.split("_").collect(&:capitalize).join
+    end
 
 
-      def self.find_for_ip(string)
+    def self.matches_tld?(string)
+      string =~ /^\.(xn--)?[a-z0-9]+$/
+    end
+
+    def self.matches_ip?(string)
+      valid_ipv4?(string) || valid_ipv6?(string)
+    end
+
+    def self.matches_email?(string)
+      string =~ /@/
+    end
+
+    def self.matches_asn?(string)
+      string =~ /^as\d+$/i
+    end
+
+    def self.find_for_ip(string)
+      begin
         ip = IPAddr.new(string)
         type = ip.ipv4? ? :ipv4 : :ipv6
         definitions(type).each do |definition|
@@ -246,39 +277,53 @@ module Whois
             return factory(type, *definition)
           end
         end
-        raise AllocationUnknown, "IP Allocation for `#{string}' unknown. Server definitions might be outdated."
+      rescue ArgumentError
+        # continue
       end
+      raise AllocationUnknown, "IP Allocation for `#{string}' unknown. Server definitions might be outdated."
+    end
 
-      def self.find_for_email(string)
-        raise ServerNotSupported, "No WHOIS server is known for email objects"
+    def self.find_for_email(string)
+      raise ServerNotSupported, "No WHOIS server is known for email objects"
+    end
+
+    def self.find_for_domain(string)
+      definitions(:tld).each do |definition|
+        return factory(:tld, *definition) if /#{Regexp.escape(definition.first)}$/ =~ string
       end
+      nil
+    end
 
-      def self.find_for_domain(string)
-        definitions(:tld).each do |definition|
-          return factory(:tld, *definition) if /#{Regexp.escape(definition.first)}$/ =~ string
+    def self.find_for_asn(string)
+      asn = string[/\d+/].to_i
+      asn_type = asn <= 65535 ? :asn16 : :asn32
+      definitions(asn_type).each do |definition|
+        if (range = definition.first.split.map(&:to_i)) && asn >= range.first && asn <= range.last
+          return factory(asn_type, *definition)
         end
-        nil
       end
+      raise AllocationUnknown, "Unknown AS number - `#{asn}'."
+    end
 
 
-      def self.valid_ipv4?(addr)
-        if /\A(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\Z/ =~ addr
-          return $~.captures.all? {|i| i.to_i < 256}
-        end
-        false
+    def self.valid_ipv4?(addr)
+      if /\A(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\Z/ =~ addr
+        return $~.captures.all? {|i| i.to_i < 256}
       end
+      false
+    end
 
-      def self.valid_ipv6?(addr)
-        # IPv6 (normal)
-        return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*\Z/ =~ addr
-        return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*)?\Z/ =~ addr
-        return true if /\A::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*)?\Z/ =~ addr
-        # IPv6 (IPv4 compat)
-        return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:/ =~ addr && valid_ipv4?($')
-        return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:)?/ =~ addr && valid_ipv4?($')
-        return true if /\A::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:)?/ =~ addr && valid_ipv4?($')
-        false
-      end
+    def self.valid_ipv6?(addr)
+      # IPv6 (normal)
+      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*\Z/ =~ addr
+      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*)?\Z/ =~ addr
+      return true if /\A::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*)?\Z/ =~ addr
+      # IPv6 (IPv4 compat)
+      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:/ =~ addr && valid_ipv4?($')
+      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:)?/ =~ addr && valid_ipv4?($')
+      return true if /\A::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:)?/ =~ addr && valid_ipv4?($')
+      false
+    end
 
   end
 

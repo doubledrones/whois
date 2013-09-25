@@ -3,7 +3,7 @@
 #
 # An intelligent pure Ruby WHOIS client and parser.
 #
-# Copyright (c) 2009-2011 Simone Carletti <weppos@weppos.net>
+# Copyright (c) 2009-2013 Simone Carletti <weppos@weppos.net>
 #++
 
 
@@ -30,8 +30,10 @@ module Whois
         property_supported :status do
           if content_for_scanner =~ /Status:\s+(.+?)\n/
             case $1.downcase
-              when "active"         then :registered
-              when "not registered" then :available
+              when "active"
+                :registered
+              when "not registered"
+                :available
               else
                 Whois.bug!(ParserError, "Unknown status `#{$1}'.")
             end
@@ -41,7 +43,7 @@ module Whois
         end
 
         property_supported :available? do
-          (status == :available)
+          status == :available
         end
 
         property_supported :registered? do
@@ -50,19 +52,19 @@ module Whois
 
 
         property_supported :created_on do
-          if content_for_scanner =~ /Created:\s+(.+)\n/
+          if content_for_scanner =~ /Created:\s+(.+?)\n/
             Time.parse($1)
           end
         end
 
         property_supported :updated_on do
-          if content_for_scanner =~ /Modified:\s+(.+)\n/
+          if content_for_scanner =~ /Modified:\s+(.+?)\n/
             Time.parse($1)
           end
         end
 
         property_supported :expires_on do
-          if content_for_scanner =~ /Expires:\s+(.+)\n/
+          if content_for_scanner =~ /Expires:\s+(.+?)\n/
             Time.parse($1)
           end
         end
@@ -71,7 +73,7 @@ module Whois
         property_supported :nameservers do
           if content_for_scanner =~ /Name Servers:\n((.+\n)+)\n/
             $1.split("\n").map do |name|
-              Record::Nameserver.new(name.strip)
+              Record::Nameserver.new(:name => name.strip)
             end
           end
         end

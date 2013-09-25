@@ -2,7 +2,7 @@
   should: %s == "google.bo"
 
 #domain_id
-  should: %s raise_error(Whois::PropertyNotSupported)
+  should: %s raise_error(Whois::AttributeNotSupported)
 
 
 #status
@@ -16,16 +16,16 @@
 
 
 #created_on
-  should: %s be_a(Time)
+  should: %s CLASS(time)
   should: %s == Time.parse("2006-08-22")
 
 #updated_on
-  should: %s raise_error(Whois::PropertyNotSupported)
+  should: %s raise_error(Whois::AttributeNotSupported)
 
 #expires_on
-  should: %s be_a(Time)
-  should: %s == Time.parse("2011-08-22")
+  should: %s CLASS(time)
+  should: %s == Time.parse("2013-08-22")
 
 
 #nameservers
-  should: %s raise_error(Whois::PropertyNotSupported)
+  should: %s raise_error(Whois::AttributeNotSupported)

@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,46 +15,61 @@ require 'whois/record/parser/whois.nic.ki.rb'
 
 describe Whois::Record::Parser::WhoisNicKi, "status_available.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.nic.ki/status_available.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#domain" do
     it do
-      @parser.status.should == :available
+      subject.domain.should == "u34jedzcq.ki"
     end
   end
-  context "#available?" do
+  describe "#domain_id" do
     it do
-      @parser.available?.should == true
+      subject.domain_id.should == nil
     end
   end
-  context "#registered?" do
+  describe "#status" do
     it do
-      @parser.registered?.should == false
+      subject.status.should == :available
     end
   end
-  context "#created_on" do
+  describe "#available?" do
     it do
-      @parser.created_on.should == nil
+      subject.available?.should == true
     end
   end
-  context "#updated_on" do
+  describe "#registered?" do
     it do
-      @parser.updated_on.should == nil
+      subject.registered?.should == false
     end
   end
-  context "#expires_on" do
+  describe "#created_on" do
     it do
-      @parser.expires_on.should == nil
+      subject.created_on.should == nil
     end
   end
-  context "#nameservers" do
+  describe "#updated_on" do
     it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should == []
+      subject.updated_on.should == nil
+    end
+  end
+  describe "#expires_on" do
+    it do
+      subject.expires_on.should == nil
+    end
+  end
+  describe "#registrar" do
+    it do
+      subject.registrar.should == nil
+    end
+  end
+  describe "#nameservers" do
+    it do
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should == []
     end
   end
 end

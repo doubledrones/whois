@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,15 +15,15 @@ require 'whois/record/parser/whois.nic.ve.rb'
 
 describe Whois::Record::Parser::WhoisNicVe, "property_expires_on_missing.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.nic.ve/property_expires_on_missing.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#expires_on" do
+  describe "#expires_on" do
     it do
-      @parser.expires_on.should == nil
+      subject.expires_on.should == nil
     end
   end
 end

@@ -6,13 +6,6 @@
   should: %s == "u34jedzcq.cc"
 
 #domain_id
-  should: %s raise_error(Whois::PropertyNotSupported)
-
-
-#referral_whois
-  should: %s == nil
-
-#referral_url
   should: %s == nil
 
 
@@ -41,5 +34,13 @@
 
 
 #nameservers
-  should: %s be_a(Array)
+  should: %s CLASS(array)
   should: %s == []
+
+
+
+#referral_whois
+  should: %s == nil
+
+#referral_url
+  should: %s == nil

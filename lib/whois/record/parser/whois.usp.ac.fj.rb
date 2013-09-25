@@ -3,7 +3,7 @@
 #
 # An intelligent pure Ruby WHOIS client and parser.
 #
-# Copyright (c) 2009-2011 Simone Carletti <weppos@weppos.net>
+# Copyright (c) 2009-2013 Simone Carletti <weppos@weppos.net>
 #++
 
 
@@ -14,25 +14,24 @@ module Whois
   class Record
     class Parser
 
-      #
-      # = whois.usp.ac.fj parser
-      #
       # Parser for the whois.usp.ac.fj server.
       #
-      # NOTE: This parser is just a stub and provides only a few basic methods
-      # to check for domain availability and get domain status.
-      # Please consider to contribute implementing missing methods.
-      # See WhoisNicIt parser for an explanation of all available methods
-      # and examples.
+      # @note This parser is just a stub and provides only a few basic methods
+      #   to check for domain availability and get domain status.
+      #   Please consider to contribute implementing missing methods.
+      #
+      # @see Whois::Record::Parser::Example
+      #   The Example parser for the list of all available methods.
       #
       class WhoisUspAcFj < Base
 
         property_supported :status do
           if content_for_scanner =~ /Status:\s+(.+?)\n/
             case $1.downcase
-              when "active" then :registered
-              else
-                Whois.bug!(ParserError, "Unknown status `#{$1}'.")
+            when "active"
+              :registered
+            else
+              Whois.bug!(ParserError, "Unknown status `#{$1}'.")
             end
           else
             :available
@@ -62,7 +61,7 @@ module Whois
         property_supported :nameservers do
           if content_for_scanner =~ /Domain servers:\n\n((.+\n)+)\n/
             $1.split("\n").map do |name|
-              Record::Nameserver.new(name.strip.downcase)
+              Record::Nameserver.new(:name => name.strip.downcase)
             end
           end
         end

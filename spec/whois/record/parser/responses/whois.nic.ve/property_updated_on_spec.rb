@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,16 +15,16 @@ require 'whois/record/parser/whois.nic.ve.rb'
 
 describe Whois::Record::Parser::WhoisNicVe, "property_updated_on.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.nic.ve/property_updated_on.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#updated_on" do
+  describe "#updated_on" do
     it do
-      @parser.updated_on.should be_a(Time)
-      @parser.updated_on.should == Time.parse("2005-11-17 21:16:31")
+      subject.updated_on.should be_a(Time)
+      subject.updated_on.should == Time.parse("2005-11-17 21:16:31")
     end
   end
 end

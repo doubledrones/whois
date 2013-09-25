@@ -3,7 +3,7 @@
 #
 # An intelligent pure Ruby WHOIS client and parser.
 #
-# Copyright (c) 2009-2011 Simone Carletti <weppos@weppos.net>
+# Copyright (c) 2009-2013 Simone Carletti <weppos@weppos.net>
 #++
 
 
@@ -11,49 +11,25 @@ require 'time'
 require 'whois/record/contact'
 require 'whois/record/registrar'
 require 'whois/record/nameserver'
-require 'whois/record/parser/features/ast'
+require 'whois/record/scanners/scannable'
 
 
 module Whois
   class Record
     class Parser
 
-
-      # This class is intended to be the base abstract class for all
+      # Represents the abstract base parser class for all
       # server-specific parser implementations.
       #
-      # == Available Methods
-      #
-      # The Base class is for the most part auto-generated via meta programming.
+      # NOTE. This class is for the most part auto-generated via meta programming.
       # This is the reason why RDoc can't detect and document all available methods.
+      #
+      # @abstract
       #
       class Base
 
-        @@property_registry = {}
-
-        # Returns the <tt>@@property_registry</tt> if <tt>klass</tt> is nil,
-        # otherwise returns the value in <tt>@@property_registry</tt> for given <tt>klass</tt>.
-        # <tt>klass</tt> is expected to be a class name.
-        #
-        # Returned value is always a hash. If <tt>@@property_registry[klass]</tt>
-        # doesn't exist, this method automatically initializes it to an empty Hash.
-        #
-        # @param  [Class] klass
-        # @return [Hash]
-        #
-        # @example Get the full registry
-        #   property_registry
-        #
-        # @example Get the registry for a specfic Class
-        #   property_registry(ParserClass)
-        #
-        def self.property_registry(klass = nil)
-          if klass.nil?
-            @@property_registry
-          else
-            @@property_registry[klass] ||= {}
-          end
-        end
+        class_attribute :_properties
+        self._properties = {}
 
         # Returns the status for the +property+ passed as symbol.
         #
@@ -61,39 +37,39 @@ module Whois
         # @return [Symbol, nil]
         #
         # @example Undefined property
-        #   property_status(:disclaimer)
+        #   property_state(:disclaimer)
         #   # => nil
         #
         # @example Defined property
-        #   property_register(:discaimer, :supported) {}
-        #   property_status(:disclaimer)
+        #   property_register(:disclaimer, Whois::Record::Parser::PROPERTY_STATE_SUPPORTED) {}
+        #   property_state(:disclaimer)
         #   # => :supported
         #
-        def self.property_status(property)
-          property_registry(self)[property]
+        def self.property_state(property)
+          self._properties[property]
         end
 
         # Check if the +property+ passed as symbol
-        # is registered in the +property_registry+ for current parser.
+        # is registered in the registry for current parser.
         #
         # @param  [Symbol] property
         # @param  [Symbol] status
         # @return [Boolean]
         #
         # @example Not-registered property
-        #   property_registered?(:disclaimer)
+        #   property_state?(:disclaimer)
         #   # => false
         #
         # @example Registered property
-        #   property_register(:discaimer) {}
-        #   property_registered?(:disclaimer)
+        #   property_register(:disclaimer) {}
+        #   property_state?(:disclaimer)
         #   # => true
         #
-        def self.property_registered?(property, status = :any)
+        def self.property_state?(property, status = :any)
           if status == :any
-            property_registry(self).key?(property)
+            self._properties.key?(property)
           else
-            property_registry(self)[property] == status
+            self._properties[property] == status
           end
         end
 
@@ -105,14 +81,14 @@ module Whois
         # @return [void]
         #
         def self.property_register(property, status)
-          property_registry(self).merge!({ property => status })
+          self._properties = self._properties.merge({ property => status })
         end
 
 
-        # Registers a <tt>property</tt> as <tt>:not_implemented</tt>
+        # Registers a <tt>property</tt> as "not implemented"
         # and defines the corresponding private _property_PROPERTY method.
         #
-        # A :not_implemented property always raises a <tt>PropertyNotImplemented</tt> error
+        # A "not implemented" property always raises a <tt>AttributeNotImplemented</tt> error
         # when the property method is called.
         #
         # @param  [Symbol] property
@@ -123,21 +99,21 @@ module Whois
         #   property_not_implemented(:disclaimer)
         #
         def self.property_not_implemented(property)
-          property_register(property, :not_implemented)
+          property_register(property, Whois::Record::Parser::PROPERTY_STATE_NOT_IMPLEMENTED)
 
           class_eval(<<-RUBY, __FILE__, __LINE__ + 1)
             def _property_#{property}(*args)
-              raise PropertyNotImplemented
+              raise AttributeNotImplemented
             end
 
             private :_property_#{property}
           RUBY
         end
 
-        # Registers a <tt>property</tt> as <tt>:not_supported</tt>
+        # Registers a <tt>property</tt> as "not supported"
         # and defines the corresponding private _property_PROPERTY method.
         #
-        # A :not_implemented property always raises a <tt>PropertyNotSupported</tt> error
+        # A "not supported" property always raises a <tt>AttributeNotSupported</tt> error
         # when the property method is called.
         #
         # @param  [Symbol] property
@@ -148,18 +124,18 @@ module Whois
         #   property_not_supported(:disclaimer)
         #
         def self.property_not_supported(property)
-          property_register(property, :not_supported)
+          property_register(property, Whois::Record::Parser::PROPERTY_STATE_NOT_SUPPORTED)
 
           class_eval(<<-RUBY, __FILE__, __LINE__ + 1)
             def _property_#{property}(*args)
-              raise PropertyNotSupported
+              raise AttributeNotSupported
             end
 
             private :_property_#{property}
           RUBY
         end
 
-        # Registers a <tt>property</tt> as <tt>:supported</tt>
+        # Registers a <tt>property</tt> as "supported"
         # and defines the corresponding private _property_PROPERTY method.
         #
         # @param  [Symbol] property
@@ -172,7 +148,7 @@ module Whois
         #   end
         #
         def self.property_supported(property, &block)
-          property_register(property, :supported)
+          property_register(property, Whois::Record::Parser::PROPERTY_STATE_SUPPORTED)
 
           define_method("_property_#{property}", &block)
           private :"_property_#{property}"
@@ -185,7 +161,7 @@ module Whois
         # @return [Boolean]
         #
         def property_supported?(property)
-          self.class.property_registered?(property, :supported)
+          self.class.property_state?(property, Whois::Record::Parser::PROPERTY_STATE_SUPPORTED)
         end
 
 
@@ -234,19 +210,19 @@ module Whois
         #   is(:response_throttled?)
         #   # => true
         #
-        # @api internal
+        # @api private
         def is(symbol)
           respond_to?(symbol) && send(symbol)
         end
 
-        # @api internal
+        # @api private
         def validate!
           raise ResponseIsThrottled   if is(:response_throttled?)
           raise ResponseIsUnavailable if is(:response_unavailable?)
         end
 
 
-        # @group Properties
+        # @!group Properties
 
         Whois::Record::Parser::PROPERTIES.each do |property|
           class_eval(<<-RUBY, __FILE__, __LINE__ + 1)
@@ -258,10 +234,10 @@ module Whois
           property_not_implemented(property)
         end
 
-        # @endgroup
+        # @!endgroup
 
 
-        # @group Methods
+        # @!group Methods
 
         # Collects and returns all the available contacts.
         #
@@ -277,10 +253,10 @@ module Whois
           end
         end
 
-        # @endgroup
+        # @!endgroup
 
 
-        # @group Response
+        # @!group Response
 
         # Checks whether the content of this part is different than +other+.
         #
@@ -322,18 +298,6 @@ module Whois
           content_for_scanner == other.content_for_scanner
         end
 
-        # Checks whether this is a throttle response.
-        #
-        # @return [Boolean]
-        #
-        # @abstract This method is just a stub.
-        #           Define it in your parser class.
-        #
-        # @see Whois::Record#response_throttled?
-        # @see Whois::Record::Parser#response_throttled?
-        #
-        def response_throttled?
-        end
 
         # Checks whether this is an incomplete response.
         #
@@ -348,6 +312,19 @@ module Whois
         def response_incomplete?
         end
 
+        # Checks whether this is a throttle response.
+        #
+        # @return [Boolean]
+        #
+        # @abstract This method is just a stub.
+        #           Define it in your parser class.
+        #
+        # @see Whois::Record#response_throttled?
+        # @see Whois::Record::Parser#response_throttled?
+        #
+        def response_throttled?
+        end
+
         # Checks whether this response contains a message
         # that can be reconducted to a "WHOIS Server Unavailable" status.
         #
@@ -359,59 +336,61 @@ module Whois
         # @abstract This method is just a stub.
         #           Define it in your parser class.
         #
+        # @see Whois::Record#response_unavailable?
+        # @see Whois::Record::Parser#response_unavailable?
+        #
         def response_unavailable?
         end
 
         # Let them be documented
-        undef :response_incomplete?
-        undef :response_throttled?
-        undef :response_unavailable?
+        undef response_incomplete?
+        undef response_throttled?
+        undef response_unavailable?
 
-        # @endgroup
+        # @!endgroup
 
 
         protected
 
-          def content_for_scanner
-            @content_for_scanner ||= content.to_s.gsub(/\r\n/, "\n")
-          end
+        def content_for_scanner
+          @content_for_scanner ||= content.to_s.gsub(/\r\n/, "\n")
+        end
 
-          def cached_properties_fetch(key)
-            if !@cached_properties.key?(key)
-              @cached_properties[key] = yield
-            end
-            @cached_properties[key]
+        def cached_properties_fetch(key)
+          if !@cached_properties.key?(key)
+            @cached_properties[key] = yield
           end
+          @cached_properties[key]
+        end
+
 
         private
 
-          # @api internal
-          def typecast(value, type)
-            if Array == type
-              Array.wrap(value)
+        def typecast(value, type)
+          if Array == type
+            Array.wrap(value)
+          else
+            value
+          end
+        end
+
+        def handle_property(property, *args)
+          unless property_supported?(property)
+            return send(:"_property_#{property}", *args)
+          end
+
+          cached_properties_fetch(property) do
+            validate!
+            value = send(:"_property_#{property}", *args)
+
+            case property.to_s
+            when /_contacts$/, "nameservers"
+              typecast(value, Array)
             else
               value
             end
           end
-
-          # @api internal
-          def handle_property(property, *args)
-            unless property_supported?(property)
-              return send(:"_property_#{property}", *args)
-            end
-
-            cached_properties_fetch(property) do
-              validate!
-              value = send(:"_property_#{property}", *args)
-
-              case property.to_s
-              when /_contacts$/, "nameservers"
-                typecast(value, Array)
-              else
-                value
-              end
-            end
-          end
+        end
 
       end
 

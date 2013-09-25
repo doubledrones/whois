@@ -1,5 +1,5 @@
 #disclaimer
-  should: %s raise_error(Whois::PropertyNotSupported)
+  should: %s raise_error(Whois::AttributeNotSupported)
 
 
 #domain
@@ -7,13 +7,6 @@
 
 #domain_id
   should: %s == nil
-
-
-#referral_url
-  should: %s raise_error(Whois::PropertyNotSupported)
-
-#referral_whois
-  should: %s raise_error(Whois::PropertyNotSupported)
 
 
 #status
@@ -30,7 +23,7 @@
   should: %s == nil
 
 #updated_on
-  should: %s raise_error(Whois::PropertyNotSupported)
+  should: %s raise_error(Whois::AttributeNotSupported)
 
 #expires_on
   should: %s == nil
@@ -40,19 +33,19 @@
   should: %s == nil
 
 #registrant_contacts
-  should: %s be_a(Array)
+  should: %s CLASS(array)
   should: %s == []
 
 #admin_contacts
-  should: %s be_a(Array)
+  should: %s CLASS(array)
   should: %s == []
 
 #technical_contacts
-  should: %s raise_error(Whois::PropertyNotSupported)
+  should: %s raise_error(Whois::AttributeNotSupported)
 
 
 #nameservers
-  should: %s be_a(Array)
+  should: %s CLASS(array)
   should: %s == []
 
 

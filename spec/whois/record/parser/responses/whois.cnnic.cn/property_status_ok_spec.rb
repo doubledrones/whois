@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,25 +15,25 @@ require 'whois/record/parser/whois.cnnic.cn.rb'
 
 describe Whois::Record::Parser::WhoisCnnicCn, "property_status_ok.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.cnnic.cn/property_status_ok.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#status" do
     it do
-      @parser.status.should == ["ok"]
+      subject.status.should == ["ok"]
     end
   end
-  context "#available?" do
+  describe "#available?" do
     it do
-      @parser.available?.should == false
+      subject.available?.should == false
     end
   end
-  context "#registered?" do
+  describe "#registered?" do
     it do
-      @parser.registered?.should == true
+      subject.registered?.should == true
     end
   end
 end

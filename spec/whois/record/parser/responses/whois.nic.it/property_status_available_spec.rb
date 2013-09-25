@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,25 +15,25 @@ require 'whois/record/parser/whois.nic.it.rb'
 
 describe Whois::Record::Parser::WhoisNicIt, "property_status_available.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.nic.it/property_status_available.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#status" do
     it do
-      @parser.status.should == :available
+      subject.status.should == :available
     end
   end
-  context "#available?" do
+  describe "#available?" do
     it do
-      @parser.available?.should == true
+      subject.available?.should == true
     end
   end
-  context "#registered?" do
+  describe "#registered?" do
     it do
-      @parser.registered?.should == false
+      subject.registered?.should == false
     end
   end
 end

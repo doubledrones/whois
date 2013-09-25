@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,45 +15,53 @@ require 'whois/record/parser/whois.nic.name.rb'
 
 describe Whois::Record::Parser::WhoisNicName, "status_registered.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.nic.name/status_registered.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#status" do
     it do
-      @parser.status.should == :registered
+      subject.status.should == ["clientTransferProhibited"]
     end
   end
-  context "#available?" do
+  describe "#available?" do
     it do
-      @parser.available?.should == false
+      subject.available?.should == false
     end
   end
-  context "#registered?" do
+  describe "#registered?" do
     it do
-      @parser.registered?.should == true
+      subject.registered?.should == true
     end
   end
-  context "#created_on" do
+  describe "#created_on" do
     it do
-      lambda { @parser.created_on }.should raise_error(Whois::PropertyNotSupported)
+      subject.created_on.should be_a(Time)
+      subject.created_on.should == Time.parse("2006-04-19 12:22:08 UTC")
     end
   end
-  context "#updated_on" do
+  describe "#updated_on" do
     it do
-      lambda { @parser.updated_on }.should raise_error(Whois::PropertyNotSupported)
+      subject.updated_on.should be_a(Time)
+      subject.updated_on.should == Time.parse("2013-06-11 16:51:16 UTC")
     end
   end
-  context "#expires_on" do
+  describe "#expires_on" do
     it do
-      lambda { @parser.expires_on }.should raise_error(Whois::PropertyNotSupported)
+      subject.expires_on.should be_a(Time)
+      subject.expires_on.should == Time.parse("2014-04-19 12:22:08 UTC")
     end
   end
-  context "#nameservers" do
+  describe "#nameservers" do
     it do
-      lambda { @parser.nameservers }.should raise_error(Whois::PropertyNotSupported)
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should have(2).items
+      subject.nameservers[0].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[0].name.should == "ns1.dreamhost.com"
+      subject.nameservers[1].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[1].name.should == "ns2.dreamhost.com"
     end
   end
 end

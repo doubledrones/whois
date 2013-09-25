@@ -3,7 +3,7 @@
 #
 # An intelligent pure Ruby WHOIS client and parser.
 #
-# Copyright (c) 2009-2011 Simone Carletti <weppos@weppos.net>
+# Copyright (c) 2009-2013 Simone Carletti <weppos@weppos.net>
 #++
 
 
@@ -43,15 +43,30 @@ module Whois
           !available?
         end
 
+        property_supported :created_on do
+          if content_for_scanner =~ /created:\s+(.+?)(\s+#.+)?\n/
+            Time.parse($1)
+          end
+        end
 
-        property_not_supported :created_on
+        property_supported :updated_on do
+          if content_for_scanner =~ /changed:\s+(.+?)\n/
+            Time.parse($1)
+          end
+        end
 
-        property_not_supported :updated_on
+        property_supported :expires_on do
+          if content_for_scanner =~ /expires:\s+(.+?)\n/
+            Time.parse($1)
+          end
+        end
 
-        property_not_supported :expires_on
-
-
-        property_not_supported :nameservers
+        property_supported :nameservers do
+          content_for_scanner.scan(/nserver:\s+(.+)\n/).flatten.map do |line|
+            name, ipv4 = line.strip.split(" ")
+            Record::Nameserver.new(:name => name, :ipv4 => ipv4)
+          end
+        end
 
       end
 

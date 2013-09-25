@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,83 +15,83 @@ require 'whois/record/parser/whois.nic.tv.rb'
 
 describe Whois::Record::Parser::WhoisNicTv, "status_registered.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.nic.tv/status_registered.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#disclaimer" do
+  describe "#disclaimer" do
     it do
-      @parser.disclaimer.should == "TERMS OF USE: You are not authorized to access or query our Whois database through the use of electronic processes that are high-volume and automated except as reasonably necessary to register domain names or modify existing registrations; the Data in VeriSign's (\"VeriSign\") Whois database is provided by VeriSign for information purposes only, and to assist persons in obtaining information about or related to a domain name registration record. VeriSign does not guarantee its accuracy. By submitting a Whois query, you agree to abide by the following terms of use: You agree that you may use this Data only for lawful purposes and that under no circumstances will you use this Data to: (1) allow, enable, or otherwise support the transmission of mass unsolicited, commercial advertising or solicitations via e-mail, telephone, or facsimile; or (2) enable high volume, automated, electronic processes that apply to VeriSign (or its computer systems). The compilation, repackaging, dissemination or other use of this Data is expressly prohibited without the prior written consent of VeriSign. You agree not to use electronic processes that are automated and high-volume to access or query the Whois database except as reasonably necessary to register domain names or modify existing registrations. VeriSign reserves the right to restrict your access to the Whois database in its sole discretion to ensure operational stability.  VeriSign may restrict or terminate your access to the Whois database for failure to abide by these terms of use. VeriSign reserves the right to modify these terms at any time."
+      subject.disclaimer.should == "TERMS OF USE: You are not authorized to access or query our Whois database through the use of electronic processes that are high-volume and automated except as reasonably necessary to register domain names or modify existing registrations; the Data in VeriSign's (\"VeriSign\") Whois database is provided by VeriSign for information purposes only, and to assist persons in obtaining information about or related to a domain name registration record. VeriSign does not guarantee its accuracy. By submitting a Whois query, you agree to abide by the following terms of use: You agree that you may use this Data only for lawful purposes and that under no circumstances will you use this Data to: (1) allow, enable, or otherwise support the transmission of mass unsolicited, commercial advertising or solicitations via e-mail, telephone, or facsimile; or (2) enable high volume, automated, electronic processes that apply to VeriSign (or its computer systems). The compilation, repackaging, dissemination or other use of this Data is expressly prohibited without the prior written consent of VeriSign. You agree not to use electronic processes that are automated and high-volume to access or query the Whois database except as reasonably necessary to register domain names or modify existing registrations. VeriSign reserves the right to restrict your access to the Whois database in its sole discretion to ensure operational stability.  VeriSign may restrict or terminate your access to the Whois database for failure to abide by these terms of use. VeriSign reserves the right to modify these terms at any time."
     end
   end
-  context "#domain" do
+  describe "#domain" do
     it do
-      @parser.domain.should == "thinkcode.tv"
+      subject.domain.should == "thinkcode.tv"
     end
   end
-  context "#domain_id" do
+  describe "#domain_id" do
     it do
-      lambda { @parser.domain_id }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.domain_id }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#referral_whois" do
+  describe "#status" do
     it do
-      @parser.referral_whois.should == "whois.dynadot.com"
+      subject.status.should == "CLIENT-XFER-PROHIBITED"
     end
   end
-  context "#referral_url" do
+  describe "#available?" do
     it do
-      @parser.referral_url.should == "http://www.dynadot.com"
+      subject.available?.should == false
     end
   end
-  context "#status" do
+  describe "#registered?" do
     it do
-      @parser.status.should == "CLIENT-XFER-PROHIBITED"
+      subject.registered?.should == true
     end
   end
-  context "#available?" do
+  describe "#created_on" do
     it do
-      @parser.available?.should == false
+      subject.created_on.should be_a(Time)
+      subject.created_on.should == Time.parse("2009-04-21")
     end
   end
-  context "#registered?" do
+  describe "#updated_on" do
     it do
-      @parser.registered?.should == true
+      subject.updated_on.should be_a(Time)
+      subject.updated_on.should == Time.parse("2009-11-19")
     end
   end
-  context "#created_on" do
+  describe "#expires_on" do
     it do
-      @parser.created_on.should be_a(Time)
-      @parser.created_on.should == Time.parse("2009-04-21")
+      subject.expires_on.should be_a(Time)
+      subject.expires_on.should == Time.parse("2010-04-21")
     end
   end
-  context "#updated_on" do
+  describe "#registrar" do
     it do
-      @parser.updated_on.should be_a(Time)
-      @parser.updated_on.should == Time.parse("2009-11-19")
+      subject.registrar.should == nil
     end
   end
-  context "#expires_on" do
+  describe "#nameservers" do
     it do
-      @parser.expires_on.should be_a(Time)
-      @parser.expires_on.should == Time.parse("2010-04-21")
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should have(2).items
+      subject.nameservers[0].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[0].name.should == "ns1.slicehost.net"
+      subject.nameservers[1].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[1].name.should == "ns2.slicehost.net"
     end
   end
-  context "#registrar" do
+  describe "#referral_whois" do
     it do
-      @parser.registrar.should == nil
+      subject.referral_whois.should == "whois.dynadot.com"
     end
   end
-  context "#nameservers" do
+  describe "#referral_url" do
     it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should have(2).items
-      @parser.nameservers[0].should be_a(_nameserver)
-      @parser.nameservers[0].name.should == "ns1.slicehost.net"
-      @parser.nameservers[1].should be_a(_nameserver)
-      @parser.nameservers[1].name.should == "ns2.slicehost.net"
+      subject.referral_url.should == "http://www.dynadot.com"
     end
   end
 end

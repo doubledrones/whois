@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,15 +15,15 @@ require 'whois/record/parser/whois.registry.in.rb'
 
 describe Whois::Record::Parser::WhoisRegistryIn, "property_status_multiple.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.registry.in/property_status_multiple.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#status" do
     it do
-      @parser.status.should == [ "client delete prohibited", "client renew prohibited", "client transfer prohibited", "client update prohibited" ]
+      subject.status.should == ["CLIENT DELETE PROHIBITED", "CLIENT RENEW PROHIBITED", "CLIENT TRANSFER PROHIBITED", "CLIENT UPDATE PROHIBITED"]
     end
   end
 end

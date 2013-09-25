@@ -3,25 +3,28 @@
 #
 # An intelligent pure Ruby WHOIS client and parser.
 #
-# Copyright (c) 2009-2011 Simone Carletti <weppos@weppos.net>
+# Copyright (c) 2009-2013 Simone Carletti <weppos@weppos.net>
 #++
 
 
 require 'whois/record/parser/base'
-require 'whois/record/parser/scanners/verisign'
+require 'whois/record/scanners/verisign'
 
 
 module Whois
   class Record
     class Parser
 
-      #
-      # = jobswhois.verisign-grs.com parser
-      #
       # Parser for the jobswhois.verisign-grs.com server.
       #
+      # @see Whois::Record::Parser::Example
+      #   The Example parser for the list of all available methods.
+      #
       class JobswhoisVerisignGrsCom < Base
-        include Features::Ast
+        include Scanners::Scannable
+
+        self.scanner = Scanners::Verisign
+
 
         property_supported :disclaimer do
           node("Disclaimer")
@@ -29,29 +32,20 @@ module Whois
 
 
         property_supported :domain do
-          node("Domain Name") { |raw| raw.downcase }
+          node("Domain Name", &:downcase)
         end
 
-        property_not_supported :domain_id
-
-
-        property_supported :referral_whois do
-          node("Whois Server")
-        end
-
-        property_supported :referral_url do
-          node("Referral URL") do |raw|
-            last_useful_item(raw)
-          end
+        property_supported :domain_id do
+          node("Domain ID")
         end
 
 
         property_supported :status do
-          node("Status")
+          node("Domain Status")
         end
 
         property_supported :available? do
-          node("Registrar").nil?
+          node("Sponsoring Registrar").nil?
         end
 
         property_supported :registered? do
@@ -60,49 +54,44 @@ module Whois
 
 
         property_supported :created_on do
-          node("Creation Date") { |raw| Time.parse(raw) }
+          node("Creation Date") { |value| Time.parse(value) }
         end
 
         property_supported :updated_on do
-          node("Updated Date") { |raw| Time.parse(raw) }
+          node("Updated Date") { |value| Time.parse(value) }
         end
 
         property_supported :expires_on do
-          node("Expiration Date") { |raw| Time.parse(raw) }
+          node("Expiration Date") { |value| Time.parse(value) }
         end
 
 
         property_supported :registrar do
-          node("Registrar") do |raw|
-            Whois::Record::Registrar.new(:name => last_useful_item(raw), :organization => last_useful_item(raw), :url => referral_url)
+          node("Sponsoring Registrar") do |value|
+            Whois::Record::Registrar.new(
+                :id           => node("Sponsoring Registrar IANA ID"),
+                :name         => value,
+                :organization => value,
+                :url          => referral_url
+            )
           end
         end
 
 
         property_supported :nameservers do
           Array.wrap(node("Name Server")).reject { |value| value =~ /no nameserver/i }.map do |name|
-            Nameserver.new(name.downcase)
+            Nameserver.new(:name => name.downcase)
           end
         end
 
 
-        # Initializes a new {Scanners::Verisign} instance
-        # passing the {Whois::Record::Parser::Base#content_for_scanner}
-        # and calls +parse+ on it.
-        #
-        # @return [Hash]
-        def parse
-          Scanners::Verisign.new(content_for_scanner).parse
+        def referral_whois
+          node("Whois Server")
         end
 
-
-        protected
-
-          # In case of "SPAM Response", the response contains more than one item
-          # for the same value and the value becomes an Array.
-          def last_useful_item(values)
-            values.is_a?(Array) ? values.last : values
-          end
+        def referral_url
+          node("Referral URL")
+        end
 
       end
 

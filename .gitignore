@@ -1,19 +1,13 @@
-# https://github.com/weppos/gitignore/blob/weppos/Ruby.gitignore
-
-coverage
-rdoc
-tmp
+utils/whois-utf8.rb
 
 # Bundler
 .bundle
-pkg
+pkg/*
+Gemfile.lock
 
 # Rubinius
 *.rbc
 
-# YARD artifacts
+# YARD
 .yardoc
-_yardoc
-doc/
-
-utils/whois-utf8.rb
+yardoc/

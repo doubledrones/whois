@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,91 +15,81 @@ require 'whois/record/parser/whois.co.pl.rb'
 
 describe Whois::Record::Parser::WhoisCoPl, "status_available.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.co.pl/status_available.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#disclaimer" do
+  describe "#disclaimer" do
     it do
-      lambda { @parser.disclaimer }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.disclaimer }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#domain" do
+  describe "#domain" do
     it do
-      @parser.domain.should == nil
+      subject.domain.should == nil
     end
   end
-  context "#domain_id" do
+  describe "#domain_id" do
     it do
-      lambda { @parser.domain_id }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.domain_id }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#referral_url" do
+  describe "#status" do
     it do
-      lambda { @parser.referral_url }.should raise_error(Whois::PropertyNotSupported)
+      subject.status.should == :available
     end
   end
-  context "#referral_whois" do
+  describe "#available?" do
     it do
-      lambda { @parser.referral_whois }.should raise_error(Whois::PropertyNotSupported)
+      subject.available?.should == true
     end
   end
-  context "#status" do
+  describe "#registered?" do
     it do
-      @parser.status.should == :available
+      subject.registered?.should == false
     end
   end
-  context "#available?" do
+  describe "#created_on" do
     it do
-      @parser.available?.should == true
+      lambda { subject.created_on }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#registered?" do
+  describe "#updated_on" do
     it do
-      @parser.registered?.should == false
+      subject.updated_on.should == nil
     end
   end
-  context "#created_on" do
+  describe "#expires_on" do
     it do
-      lambda { @parser.created_on }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.expires_on }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#updated_on" do
+  describe "#registrar" do
     it do
-      @parser.updated_on.should == nil
+      lambda { subject.registrar }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#expires_on" do
+  describe "#registrant_contacts" do
     it do
-      lambda { @parser.expires_on }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.registrant_contacts }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#registrar" do
+  describe "#admin_contacts" do
     it do
-      lambda { @parser.registrar }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.admin_contacts }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#registrant_contacts" do
+  describe "#technical_contacts" do
     it do
-      lambda { @parser.registrant_contacts }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.technical_contacts }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#admin_contacts" do
+  describe "#nameservers" do
     it do
-      lambda { @parser.admin_contacts }.should raise_error(Whois::PropertyNotSupported)
-    end
-  end
-  context "#technical_contacts" do
-    it do
-      lambda { @parser.technical_contacts }.should raise_error(Whois::PropertyNotSupported)
-    end
-  end
-  context "#nameservers" do
-    it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should == []
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should == []
     end
   end
 end

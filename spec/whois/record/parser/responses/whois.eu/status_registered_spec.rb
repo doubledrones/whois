@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,54 +15,110 @@ require 'whois/record/parser/whois.eu.rb'
 
 describe Whois::Record::Parser::WhoisEu, "status_registered.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.eu/status_registered.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#domain" do
     it do
-      @parser.status.should == :registered
+      subject.domain.should == "google.eu"
     end
   end
-  context "#available?" do
+  describe "#domain_id" do
     it do
-      @parser.available?.should == false
+      lambda { subject.domain_id }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#registered?" do
+  describe "#status" do
     it do
-      @parser.registered?.should == true
+      subject.status.should == :registered
     end
   end
-  context "#created_on" do
+  describe "#available?" do
     it do
-      lambda { @parser.created_on }.should raise_error(Whois::PropertyNotSupported)
+      subject.available?.should == false
     end
   end
-  context "#updated_on" do
+  describe "#registered?" do
     it do
-      lambda { @parser.updated_on }.should raise_error(Whois::PropertyNotSupported)
+      subject.registered?.should == true
     end
   end
-  context "#expires_on" do
+  describe "#created_on" do
     it do
-      lambda { @parser.expires_on }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.created_on }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#nameservers" do
+  describe "#updated_on" do
     it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should have(4).items
-      @parser.nameservers[0].should be_a(_nameserver)
-      @parser.nameservers[0].name.should == "ns1.google.com"
-      @parser.nameservers[1].should be_a(_nameserver)
-      @parser.nameservers[1].name.should == "ns2.google.com"
-      @parser.nameservers[2].should be_a(_nameserver)
-      @parser.nameservers[2].name.should == "ns3.google.com"
-      @parser.nameservers[3].should be_a(_nameserver)
-      @parser.nameservers[3].name.should == "ns4.google.com"
+      lambda { subject.updated_on }.should raise_error(Whois::AttributeNotSupported)
+    end
+  end
+  describe "#expires_on" do
+    it do
+      lambda { subject.expires_on }.should raise_error(Whois::AttributeNotSupported)
+    end
+  end
+  describe "#registrar" do
+    it do
+      subject.registrar.should be_a(Whois::Record::Registrar)
+      subject.registrar.id.should           == nil
+      subject.registrar.name.should         == "MarkMonitor Inc."
+      subject.registrar.organization.should == nil
+      subject.registrar.url.should          == "www.markmonitor.com"
+    end
+  end
+  describe "#registrant_contacts" do
+    it do
+      lambda { subject.registrant_contacts }.should raise_error(Whois::AttributeNotSupported)
+    end
+  end
+  describe "#admin_contacts" do
+    it do
+      lambda { subject.admin_contacts }.should raise_error(Whois::AttributeNotSupported)
+    end
+  end
+  describe "#technical_contacts" do
+    it do
+      subject.technical_contacts.should be_a(Array)
+      subject.technical_contacts.should have(1).items
+      subject.technical_contacts[0].should be_a(Whois::Record::Contact)
+      subject.technical_contacts[0].type.should          == Whois::Record::Contact::TYPE_TECHNICAL
+      subject.technical_contacts[0].id.should            == nil
+      subject.technical_contacts[0].name.should          == "DNS Admin"
+      subject.technical_contacts[0].organization.should  == "Google Inc."
+      subject.technical_contacts[0].address.should       == nil
+      subject.technical_contacts[0].city.should          == nil
+      subject.technical_contacts[0].zip.should           == nil
+      subject.technical_contacts[0].state.should         == nil
+      subject.technical_contacts[0].country.should       == nil
+      subject.technical_contacts[0].country_code.should  == nil
+      subject.technical_contacts[0].phone.should         == "+1.6506234000"
+      subject.technical_contacts[0].fax.should           == "+1.6506188571"
+      subject.technical_contacts[0].email.should         == "dns-admin@google.com"
+      subject.technical_contacts[0].created_on.should    == nil
+      subject.technical_contacts[0].updated_on.should    == nil
+    end
+  end
+  describe "#nameservers" do
+    it do
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should have(4).items
+      subject.nameservers[0].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[0].name.should == "ns1.google.com"
+      subject.nameservers[1].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[1].name.should == "ns2.google.com"
+      subject.nameservers[2].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[2].name.should == "ns3.google.com"
+      subject.nameservers[3].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[3].name.should == "ns4.google.com"
+    end
+  end
+  describe "#response_throttled?" do
+    it do
+      subject.response_throttled?.should == false
     end
   end
 end

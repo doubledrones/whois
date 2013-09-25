@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,46 +15,84 @@ require 'whois/record/parser/whois.afilias-grs.info.rb'
 
 describe Whois::Record::Parser::WhoisAfiliasGrsInfo, "status_available.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.afilias-grs.info/lc/status_available.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#disclaimer" do
     it do
-      @parser.status.should == []
+      subject.disclaimer.should == nil
     end
   end
-  context "#available?" do
+  describe "#domain" do
     it do
-      @parser.available?.should == true
+      subject.domain.should == nil
     end
   end
-  context "#registered?" do
+  describe "#domain_id" do
     it do
-      @parser.registered?.should == false
+      subject.domain_id.should == nil
     end
   end
-  context "#created_on" do
+  describe "#status" do
     it do
-      @parser.created_on.should == nil
+      subject.status.should == []
     end
   end
-  context "#updated_on" do
+  describe "#available?" do
     it do
-      @parser.updated_on.should == nil
+      subject.available?.should == true
     end
   end
-  context "#expires_on" do
+  describe "#registered?" do
     it do
-      @parser.expires_on.should == nil
+      subject.registered?.should == false
     end
   end
-  context "#nameservers" do
+  describe "#created_on" do
     it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should == []
+      subject.created_on.should == nil
+    end
+  end
+  describe "#updated_on" do
+    it do
+      subject.updated_on.should == nil
+    end
+  end
+  describe "#expires_on" do
+    it do
+      subject.expires_on.should == nil
+    end
+  end
+  describe "#registrar" do
+    it do
+      subject.registrar.should == nil
+    end
+  end
+  describe "#registrant_contacts" do
+    it do
+      subject.registrant_contacts.should be_a(Array)
+      subject.registrant_contacts.should == []
+    end
+  end
+  describe "#admin_contacts" do
+    it do
+      subject.admin_contacts.should be_a(Array)
+      subject.admin_contacts.should == []
+    end
+  end
+  describe "#technical_contacts" do
+    it do
+      subject.technical_contacts.should be_a(Array)
+      subject.technical_contacts.should == []
+    end
+  end
+  describe "#nameservers" do
+    it do
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should == []
     end
   end
 end

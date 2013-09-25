@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,58 +15,58 @@ require 'whois/record/parser/whois.nic.uk.rb'
 
 describe Whois::Record::Parser::WhoisNicUk, "status_suspended.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.nic.uk/status_suspended.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#status" do
     it do
-      @parser.status.should == :registered
+      subject.status.should == :registered
     end
   end
-  context "#available?" do
+  describe "#available?" do
     it do
-      @parser.available?.should == false
+      subject.available?.should == false
     end
   end
-  context "#registered?" do
+  describe "#registered?" do
     it do
-      @parser.registered?.should == true
+      subject.registered?.should == true
     end
   end
-  context "#created_on" do
+  describe "#created_on" do
     it do
-      @parser.created_on.should be_a(Time)
-      @parser.created_on.should == Time.parse("2008-08-30")
+      subject.created_on.should be_a(Time)
+      subject.created_on.should == Time.parse("2008-08-30")
     end
   end
-  context "#updated_on" do
+  describe "#updated_on" do
     it do
-      @parser.updated_on.should be_a(Time)
-      @parser.updated_on.should == Time.parse("2010-06-01")
+      subject.updated_on.should be_a(Time)
+      subject.updated_on.should == Time.parse("2012-02-09")
     end
   end
-  context "#expires_on" do
+  describe "#expires_on" do
     it do
-      @parser.expires_on.should be_a(Time)
-      @parser.expires_on.should == Time.parse("2010-08-30")
+      subject.expires_on.should be_a(Time)
+      subject.expires_on.should == Time.parse("2010-08-30")
     end
   end
-  context "#registrar" do
+  describe "#registrar" do
     it do
-      @parser.registrar.should be_a(_registrar)
-      @parser.registrar.id.should           == "KEY-SYSTEMS-DE"
-      @parser.registrar.name.should         == "Key-Systems GmbH"
-      @parser.registrar.name.should         == "Key-Systems GmbH"
-      @parser.registrar.url.should          == "http://www.Key-Systems.net"
+      subject.registrar.should be_a(Whois::Record::Registrar)
+      subject.registrar.id.should           == "KEY-SYSTEMS-DE"
+      subject.registrar.name.should         == "Key-Systems GmbH"
+      subject.registrar.name.should         == "Key-Systems GmbH"
+      subject.registrar.url.should          == "http://www.Key-Systems.net"
     end
   end
-  context "#nameservers" do
+  describe "#nameservers" do
     it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should == []
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should == []
     end
   end
 end

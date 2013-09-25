@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,55 +15,137 @@ require 'whois/record/parser/whois.educause.edu.rb'
 
 describe Whois::Record::Parser::WhoisEducauseEdu, "status_registered.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.educause.edu/status_registered.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#disclaimer" do
     it do
-      @parser.status.should == :registered
+      subject.disclaimer.should == "\nThis Registry database contains ONLY .EDU domains. \nThe data in the EDUCAUSE Whois database is provided \nby EDUCAUSE for information purposes in order to \nassist in the process of obtaining information about \nor related to .edu domain registration records. \n\nThe EDUCAUSE Whois database is authoritative for the \n.EDU domain.         \n\nA Web interface for the .EDU EDUCAUSE Whois Server is \navailable at: http://whois.educause.net \n\nBy submitting a Whois query, you agree that this information \nwill not be used to allow, enable, or otherwise support \nthe transmission of unsolicited commercial advertising or \nsolicitations via e-mail.  The use of electronic processes to \nharvest information from this server is generally prohibited \nexcept as reasonably necessary to register or modify .edu \ndomain names.\n\nYou may use \"%\" as a wildcard in your search. For further \ninformation regarding the use of this WHOIS server, please \ntype: help \n"
     end
   end
-  context "#available?" do
+  describe "#domain" do
     it do
-      @parser.available?.should == false
+      subject.domain.should == "academia.edu"
     end
   end
-  context "#registered?" do
+  describe "#domain_id" do
     it do
-      @parser.registered?.should == true
+      lambda { subject.domain_id }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#created_on" do
+  describe "#status" do
     it do
-      @parser.created_on.should be_a(Time)
-      @parser.created_on.should == Time.parse("1998-03-11")
+      subject.status.should == :registered
     end
   end
-  context "#updated_on" do
+  describe "#available?" do
     it do
-      @parser.updated_on.should be_a(Time)
-      @parser.updated_on.should == Time.parse("2009-10-02")
+      subject.available?.should == false
     end
   end
-  context "#expires_on" do
+  describe "#registered?" do
     it do
-      @parser.expires_on.should be_a(Time)
-      @parser.expires_on.should == Time.parse("2010-07-31")
+      subject.registered?.should == true
     end
   end
-  context "#nameservers" do
+  describe "#created_on" do
     it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should have(3).items
-      @parser.nameservers[0].should be_a(_nameserver)
-      @parser.nameservers[0].should == _nameserver.new(:name => "ns3.educause.edu", :ipv4 => "198.59.61.50")
-      @parser.nameservers[1].should be_a(_nameserver)
-      @parser.nameservers[1].should == _nameserver.new(:name => "ns4.educause.edu", :ipv4 => "192.52.179.69")
-      @parser.nameservers[2].should be_a(_nameserver)
-      @parser.nameservers[2].should == _nameserver.new(:name => "ns5.educause.edu", :ipv4 => "198.59.61.50")
+      subject.created_on.should be_a(Time)
+      subject.created_on.should == Time.parse("1999-05-10")
+    end
+  end
+  describe "#updated_on" do
+    it do
+      subject.updated_on.should be_a(Time)
+      subject.updated_on.should == Time.parse("2012-04-04")
+    end
+  end
+  describe "#expires_on" do
+    it do
+      subject.expires_on.should be_a(Time)
+      subject.expires_on.should == Time.parse("2014-07-31")
+    end
+  end
+  describe "#registrar" do
+    it do
+      lambda { subject.registrar }.should raise_error(Whois::AttributeNotSupported)
+    end
+  end
+  describe "#registrant_contacts" do
+    it do
+      subject.registrant_contacts.should be_a(Array)
+      subject.registrant_contacts.should have(1).items
+      subject.registrant_contacts[0].should be_a(Whois::Record::Contact)
+      subject.registrant_contacts[0].type.should          == Whois::Record::Contact::TYPE_REGISTRANT
+      subject.registrant_contacts[0].id.should            == nil
+      subject.registrant_contacts[0].name.should          == nil
+      subject.registrant_contacts[0].organization.should  == "Academia"
+      subject.registrant_contacts[0].address.should       == "251 Kearny St\nsuite 520"
+      subject.registrant_contacts[0].city.should          == "San Francisco"
+      subject.registrant_contacts[0].zip.should           == "94108"
+      subject.registrant_contacts[0].state.should         == "CA"
+      subject.registrant_contacts[0].country.should       == "UNITED STATES"
+      subject.registrant_contacts[0].country_code.should  == nil
+      subject.registrant_contacts[0].phone.should         == nil
+      subject.registrant_contacts[0].fax.should           == nil
+      subject.registrant_contacts[0].email.should         == nil
+    end
+  end
+  describe "#admin_contacts" do
+    it do
+      subject.admin_contacts.should be_a(Array)
+      subject.admin_contacts.should have(1).items
+      subject.admin_contacts[0].should be_a(Whois::Record::Contact)
+      subject.admin_contacts[0].type.should          == Whois::Record::Contact::TYPE_ADMINISTRATIVE
+      subject.admin_contacts[0].id.should            == nil
+      subject.admin_contacts[0].name.should          == "Academia, Inc."
+      subject.admin_contacts[0].organization.should  == nil
+      subject.admin_contacts[0].address.should       == "251 Kearny St\nsuite 520"
+      subject.admin_contacts[0].city.should          == "San Francisco"
+      subject.admin_contacts[0].zip.should           == "94108"
+      subject.admin_contacts[0].state.should         == "CA"
+      subject.admin_contacts[0].country.should       == "UNITED STATES"
+      subject.admin_contacts[0].country_code.should  == nil
+      subject.admin_contacts[0].phone.should         == "(415) 829-2341"
+      subject.admin_contacts[0].fax.should           == nil
+      subject.admin_contacts[0].email.should         == "helpdesk@academia.edu"
+    end
+  end
+  describe "#technical_contacts" do
+    it do
+      subject.technical_contacts.should be_a(Array)
+      subject.technical_contacts.should have(1).items
+      subject.technical_contacts[0].should be_a(Whois::Record::Contact)
+      subject.technical_contacts[0].type.should          == Whois::Record::Contact::TYPE_TECHNICAL
+      subject.technical_contacts[0].id.should            == nil
+      subject.technical_contacts[0].name.should          == "Academia, Inc."
+      subject.technical_contacts[0].organization.should  == nil
+      subject.technical_contacts[0].address.should       == "251 Kearny St\nsuite 520"
+      subject.technical_contacts[0].city.should          == "San Francisco"
+      subject.technical_contacts[0].zip.should           == "94108"
+      subject.technical_contacts[0].state.should         == "CA"
+      subject.technical_contacts[0].country.should       == "UNITED STATES"
+      subject.technical_contacts[0].country_code.should  == nil
+      subject.technical_contacts[0].phone.should         == "(415) 829-2341"
+      subject.technical_contacts[0].fax.should           == nil
+      subject.technical_contacts[0].email.should         == "helpdesk@academia.edu"
+    end
+  end
+  describe "#nameservers" do
+    it do
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should have(4).items
+      subject.nameservers[0].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[0].name.should == "ns-1484.awsdns-57.org"
+      subject.nameservers[1].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[1].name.should == "ns-225.awsdns-28.com"
+      subject.nameservers[2].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[2].name.should == "ns-1850.awsdns-39.co.uk"
+      subject.nameservers[3].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[3].name.should == "ns-629.awsdns-14.net"
     end
   end
 end

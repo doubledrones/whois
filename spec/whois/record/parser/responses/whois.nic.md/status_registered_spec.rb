@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,104 +15,94 @@ require 'whois/record/parser/whois.nic.md.rb'
 
 describe Whois::Record::Parser::WhoisNicMd, "status_registered.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.nic.md/status_registered.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#disclaimer" do
+  describe "#disclaimer" do
     it do
-      lambda { @parser.disclaimer }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.disclaimer }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#domain" do
+  describe "#domain" do
     it do
-      @parser.domain.should == "google.md"
+      subject.domain.should == "google.md"
     end
   end
-  context "#domain_id" do
+  describe "#domain_id" do
     it do
-      lambda { @parser.domain_id }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.domain_id }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#referral_url" do
+  describe "#status" do
     it do
-      lambda { @parser.referral_url }.should raise_error(Whois::PropertyNotSupported)
+      subject.status.should == :registered
     end
   end
-  context "#referral_whois" do
+  describe "#available?" do
     it do
-      lambda { @parser.referral_whois }.should raise_error(Whois::PropertyNotSupported)
+      subject.available?.should == false
     end
   end
-  context "#status" do
+  describe "#registered?" do
     it do
-      @parser.status.should == :registered
+      subject.registered?.should == true
     end
   end
-  context "#available?" do
+  describe "#created_on" do
     it do
-      @parser.available?.should == false
+      subject.created_on.should be_a(Time)
+      subject.created_on.should == Time.parse("2006-05-02")
     end
   end
-  context "#registered?" do
+  describe "#updated_on" do
     it do
-      @parser.registered?.should == true
+      lambda { subject.updated_on }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#created_on" do
+  describe "#expires_on" do
     it do
-      @parser.created_on.should be_a(Time)
-      @parser.created_on.should == Time.parse("2006-05-02")
+      subject.expires_on.should be_a(Time)
+      subject.expires_on.should == Time.parse("2011-05-02")
     end
   end
-  context "#updated_on" do
+  describe "#registrar" do
     it do
-      lambda { @parser.updated_on }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.registrar }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#expires_on" do
+  describe "#registrant_contacts" do
     it do
-      @parser.expires_on.should be_a(Time)
-      @parser.expires_on.should == Time.parse("2011-05-02")
+      subject.registrant_contacts.should be_a(Array)
+      subject.registrant_contacts.should have(1).items
+      subject.registrant_contacts[0].should be_a(Whois::Record::Contact)
+      subject.registrant_contacts[0].type.should         == Whois::Record::Contact::TYPE_REGISTRANT
+      subject.registrant_contacts[0].id.should           == nil
+      subject.registrant_contacts[0].name.should         == "Google Inc."
     end
   end
-  context "#registrar" do
+  describe "#admin_contacts" do
     it do
-      lambda { @parser.registrar }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.admin_contacts }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#registrant_contacts" do
+  describe "#technical_contacts" do
     it do
-      @parser.registrant_contacts.should be_a(Array)
-      @parser.registrant_contacts.should have(1).items
-      @parser.registrant_contacts[0].should be_a(_contact)
-      @parser.registrant_contacts[0].type.should         == Whois::Record::Contact::TYPE_REGISTRANT
-      @parser.registrant_contacts[0].id.should           == nil
-      @parser.registrant_contacts[0].name.should         == "Google Inc."
+      lambda { subject.technical_contacts }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#admin_contacts" do
+  describe "#nameservers" do
     it do
-      lambda { @parser.admin_contacts }.should raise_error(Whois::PropertyNotSupported)
-    end
-  end
-  context "#technical_contacts" do
-    it do
-      lambda { @parser.technical_contacts }.should raise_error(Whois::PropertyNotSupported)
-    end
-  end
-  context "#nameservers" do
-    it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should have(2).items
-      @parser.nameservers[0].should be_a(_nameserver)
-      @parser.nameservers[0].name.should == "ns1.google.com"
-      @parser.nameservers[0].ipv4.should == "216.239.32.10"
-      @parser.nameservers[1].should be_a(_nameserver)
-      @parser.nameservers[1].name.should == "ns2.google.com"
-      @parser.nameservers[1].ipv4.should == "216.239.34.10"
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should have(2).items
+      subject.nameservers[0].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[0].name.should == "ns1.google.com"
+      subject.nameservers[0].ipv4.should == "216.239.32.10"
+      subject.nameservers[1].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[1].name.should == "ns2.google.com"
+      subject.nameservers[1].ipv4.should == "216.239.34.10"
     end
   end
 end

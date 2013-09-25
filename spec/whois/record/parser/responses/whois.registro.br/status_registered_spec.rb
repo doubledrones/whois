@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,45 +15,53 @@ require 'whois/record/parser/whois.registro.br.rb'
 
 describe Whois::Record::Parser::WhoisRegistroBr, "status_registered.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.registro.br/status_registered.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#status" do
     it do
-      @parser.status.should == :registered
+      subject.status.should == :registered
     end
   end
-  context "#available?" do
+  describe "#available?" do
     it do
-      @parser.available?.should == false
+      subject.available?.should == false
     end
   end
-  context "#registered?" do
+  describe "#registered?" do
     it do
-      @parser.registered?.should == true
+      subject.registered?.should == true
     end
   end
-  context "#created_on" do
+  describe "#created_on" do
     it do
-      lambda { @parser.created_on }.should raise_error(Whois::PropertyNotSupported)
+      subject.created_on.should be_a(Time)
+      subject.created_on.should == Time.parse("20110630")
     end
   end
-  context "#updated_on" do
+  describe "#updated_on" do
     it do
-      lambda { @parser.updated_on }.should raise_error(Whois::PropertyNotSupported)
+      subject.updated_on.should be_a(Time)
+      subject.updated_on.should == Time.parse("20110630")
     end
   end
-  context "#expires_on" do
+  describe "#expires_on" do
     it do
-      lambda { @parser.expires_on }.should raise_error(Whois::PropertyNotSupported)
+      subject.expires_on.should be_a(Time)
+      subject.expires_on.should == Time.parse("20120630")
     end
   end
-  context "#nameservers" do
+  describe "#nameservers" do
     it do
-      lambda { @parser.nameservers }.should raise_error(Whois::PropertyNotSupported)
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should have(2).items
+      subject.nameservers[0].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[0].name.should == "a.sec.dns.br"
+      subject.nameservers[1].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[1].name.should == "b.sec.dns.br"
     end
   end
 end

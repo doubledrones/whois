@@ -3,13 +3,13 @@
 #
 # An intelligent pure Ruby WHOIS client and parser.
 #
-# Copyright (c) 2009-2011 Simone Carletti <weppos@weppos.net>
+# Copyright (c) 2009-2013 Simone Carletti <weppos@weppos.net>
 #++
 
 
 require 'whois/record/part'
 require 'whois/record'
-require 'socket'
+require 'whois/server/socket_handler'
 
 
 module Whois
@@ -20,20 +20,13 @@ module Whois
 
         # Default WHOIS request port.
         DEFAULT_WHOIS_PORT = 43
-
         # Default bind hostname.
         DEFAULT_BIND_HOST = "0.0.0.0"
 
-        # Array of connection errors to rescue and wrap into a {Whois::ConnectionError}
-        RESCUABLE_CONNECTION_ERRORS = [
-          Errno::ECONNRESET,
-          Errno::EHOSTUNREACH,
-          Errno::ECONNREFUSED,
-          SocketError,
-        ]
+        class_attribute :query_handler
+        self.query_handler = SocketHandler.new
 
-
-        # @return [Symbol] The type of WHOIS server
+        # @return [Symbol] The type of WHOIS server.
         attr_reader :type
         # @return [String] The allocation this server is responsible for.
         attr_reader :allocation
@@ -44,7 +37,7 @@ module Whois
 
         # Temporary internal response buffer.
         #
-        # @api internal
+        # @api private
         # @return [Array]
         attr_reader :buffer
 
@@ -68,9 +61,9 @@ module Whois
         # Checks self and other for equality.
         #
         # @param  [The Whois::Server::Adapters::Base] other
-        #
         # @return [Boolean] Returns true if the other is the same object,
         #         or <tt>other</tt> attributes matches this object attributes.
+        #
         def ==(other)
           (
             self.equal?(other)
@@ -90,25 +83,26 @@ module Whois
         #
         # @param  [Hash] settings
         # @return [Hash] The updated options for this object.
+        #
         def configure(settings)
+          @host = settings[:host] if settings[:host]
           options.merge!(settings)
         end
 
 
-        # Performs a Whois query for <tt>string</tt>
+        # Performs a Whois lookup for <tt>string</tt>
         # using the current server adapter.
-        #
-        # @param  [String] string The string to be sent as query parameter.
-        #
-        # @return [Whois::Record]
         #
         # Internally, this method calls {#request}
         # using the Template Method design pattern.
         #
-        #   server.query("google.com")
+        #   server.lookup("google.com")
         #   # => Whois::Record
         #
-        def query(string)
+        # @param  [String] string The string to be sent as query parameter.
+        # @return [Whois::Record]
+        #
+        def lookup(string)
           buffer_start do |buffer|
             request(string)
             Whois::Record.new(self, buffer)
@@ -122,10 +116,10 @@ module Whois
         # This is the heart of the Template Method design pattern.
         #
         # @param  [String] string The string to be sent as query parameter.
-        #
-        # @raise  [NotImplementedError]
         # @return [void]
+        # @raise  [NotImplementedError]
         # @abstract
+        #
         def request(string)
           raise NotImplementedError
         end
@@ -133,52 +127,55 @@ module Whois
 
         private
 
-          # Store a record part in {#buffer}.
+        # Store a record part in {#buffer}.
+        #
+        # @param  [String] body
+        # @param  [String] host
+        # @return [void]
+        #
+        def buffer_append(body, host)
+          @buffer << Whois::Record::Part.new(:body => body, :host => host)
+        end
+
+        # @api private
+        def buffer_start
+          @buffer = []
+          result = yield(@buffer)
+          @buffer = [] # reset
+          result
+        end
+
+        # Prepares and passes the query to the {#query_handler}.
+        #
+        # @param  [String] query
+        # @param  [String] host
+        # @param  [String] port
+        # @return [String]
+        #
+        def query(query, host, port = nil)
+          args = []
+          args.push(host)
+          args.push(port || options[:port] || DEFAULT_WHOIS_PORT)
+
+          # This is a hack to prevent +TCPSocket.new+ to crash
+          # when resolv-replace.rb file is required.
           #
-          # @param  [String] body
-          # @param  [String] host
-          # @return [void]
+          # +TCPSocket.new+ defaults +local_host+ and +local_port+ to nil
+          # but when you require resolv-replace.rb, +local_host+
+          # is resolved when you pass any local parameter and in case of nil
+          # it raises the following error
           #
-          # @api public
-          def buffer_append(body, host)
-            @buffer << Whois::Record::Part.new(body, host)
+          #   ArgumentError: cannot interpret as DNS name: nil
+          #
+          if options[:bind_host] || options[:bind_port]
+            args.push(options[:bind_host] || DEFAULT_BIND_HOST)
+            args.push(options[:bind_port]) if options[:bind_port]
           end
 
-          # @api internal
-          def buffer_start
-            @buffer = []
-            result = yield(@buffer)
-            @buffer = [] # reset
-            result
-          end
+          self.class.query_handler.call(query, *args)
+        end
 
-          # @api public
-          def query_the_socket(query, host, port = nil)
-            ask_the_socket(
-              query,
-              host,
-              port || options[:port] || DEFAULT_WHOIS_PORT,
-              options[:bind_host] || DEFAULT_BIND_HOST,
-              options[:bind_port]
-            )
-          rescue *RESCUABLE_CONNECTION_ERRORS => error
-            raise ConnectionError, "#{error.class}: #{error.message}"
-          end
-
-          # This method handles the lowest connection
-          # to the WHOIS server.
-          #
-          # This is for internal use only!
-          #
-          # @api internal
-          def ask_the_socket(query, host, port, local_host, local_port)
-            args   = [host, port, local_host, local_port].compact
-            client = TCPSocket.open(host, port, local_host, local_port)
-            client.write("#{query}\r\n")    # I could use put(foo) and forget the \n
-            client.read                     # but write/read is more symmetric than puts/read
-          ensure                            # and I really want to use read instead of gets.
-            client.close if client          # If != client something went wrong.
-          end
+        alias :query_the_socket :query
 
       end
 

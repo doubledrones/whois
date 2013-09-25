@@ -3,7 +3,7 @@
 #
 # An intelligent pure Ruby WHOIS client and parser.
 #
-# Copyright (c) 2009-2011 Simone Carletti <weppos@weppos.net>
+# Copyright (c) 2009-2013 Simone Carletti <weppos@weppos.net>
 #++
 
 
@@ -14,26 +14,31 @@ module Whois
   class Record
     class Parser
 
-      #
-      # = whois.dns.be parser
-      #
       # Parser for the whois.dns.be server.
       #
-      # NOTE: This parser is just a stub and provides only a few basic methods
-      # to check for domain availability and get domain status.
-      # Please consider to contribute implementing missing methods.
-      # See WhoisNicIt parser for an explanation of all available methods
-      # and examples.
+      # @note This parser is just a stub and provides only a few basic methods
+      #   to check for domain availability and get domain status.
+      #   Please consider to contribute implementing missing methods.
+      #
+      # @see Whois::Record::Parser::Example
+      #   The Example parser for the list of all available methods.
       #
       class WhoisDnsBe < Base
+
+        property_supported :domain do
+          content_for_scanner.slice(/Domain:\s+(.+?)\n/, 1)
+        end
+
 
         property_supported :status do
           if content_for_scanner =~ /Status:\s+(.+?)\n/
             case $1.downcase
-              when "registered" then :registered
-              when "free"       then :available
-              else
-                Whois.bug!(ParserError, "Unknown status `#{$1}'.")
+            when "available"        then :available
+            when "not available"    then :registered
+            when "quarantine"       then :redemption
+            when "out of service"   then :redemption
+            else
+              Whois.bug!(ParserError, "Unknown status `#{$1}'.")
             end
           else
             Whois.bug!(ParserError, "Unable to parse status.")
@@ -60,16 +65,40 @@ module Whois
         property_not_supported :expires_on
 
 
+        property_supported :registrar do
+          if (match = content_for_scanner.match(/Registrar:\s+Name:(.+?)\s*Website:(.+?)\n/))
+            name, url = match.to_a[1..2]
+            Record::Registrar.new(name: name.strip, url: url.strip)
+          end
+        end
+
+
         property_supported :nameservers do
           if content_for_scanner =~ /Nameservers:\s((.+\n)+)\n/
             $1.split("\n").map do |line|
               if line.strip =~ /(.+) \((.+)\)/
-                Record::Nameserver.new($1, $2)
+                Record::Nameserver.new(:name => $1, :ipv4 => $2)
               else
-                Record::Nameserver.new(line.strip)
+                Record::Nameserver.new(:name => line.strip)
               end
             end
           end
+        end
+
+
+        # Checks whether the response has been throttled.
+        #
+        # @return [Boolean]
+        def response_throttled?
+          !!(content_for_scanner =~ /^% (Excessive querying|Maximum queries per hour reached)/) ||
+          response_blocked?
+        end
+
+        # Checks whether the server has been blocked.
+        #
+        # @return [Boolean]
+        def response_blocked?
+          !!(content_for_scanner =~ /^-3: IP address blocked/)
         end
 
       end

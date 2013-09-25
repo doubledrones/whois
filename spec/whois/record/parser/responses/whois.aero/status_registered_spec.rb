@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,57 +15,138 @@ require 'whois/record/parser/whois.aero.rb'
 
 describe Whois::Record::Parser::WhoisAero, "status_registered.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.aero/status_registered.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#disclaimer" do
     it do
-      @parser.status.should == :registered
+      subject.disclaimer.should == "Access to .AERO WHOIS information is provided to assist persons in determining the contents of a domain name registration record in the Afilias registry database. The data in this record is provided by Afilias Limited for informational purposes only, and Afilias does not guarantee its accuracy.  This service is intended only for query-based access. You agree that you will use this data only for lawful purposes and that, under no circumstances will you use this data to: (a) allow, enable, or otherwise support the transmission by e-mail, telephone, or facsimile of mass unsolicited, commercial advertising or solicitations to entities other than the data recipient's own existing customers; or (b) enable high volume, automated, electronic processes that send queries or data to the systems of Registry Operator, a Registrar, or Afilias except as reasonably necessary to register domain names or modify existing registrations. All rights reserved. Afilias reserves the right to modify these terms at any time. By submitting this query, you agree to abide by this policy."
     end
   end
-  context "#available?" do
+  describe "#domain" do
     it do
-      @parser.available?.should == false
+      subject.domain.should == "srilankan.aero"
     end
   end
-  context "#registered?" do
+  describe "#domain_id" do
     it do
-      @parser.registered?.should == true
+      subject.domain_id.should == "D246-AERO"
     end
   end
-  context "#created_on" do
+  describe "#status" do
     it do
-      @parser.created_on.should be_a(Time)
-      @parser.created_on.should == Time.parse("2002-03-26 06:48:27 UTC")
+      subject.status.should == ["OK"]
     end
   end
-  context "#updated_on" do
+  describe "#available?" do
     it do
-      @parser.updated_on.should be_a(Time)
-      @parser.updated_on.should == Time.parse("2008-03-05 14:32:18 UTC")
+      subject.available?.should == false
     end
   end
-  context "#expires_on" do
+  describe "#registered?" do
     it do
-      @parser.expires_on.should be_a(Time)
-      @parser.expires_on.should == Time.parse("2010-03-26 06:48:27 UTC")
+      subject.registered?.should == true
     end
   end
-  context "#nameservers" do
+  describe "#created_on" do
     it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should have(4).items
-      @parser.nameservers[0].should be_a(_nameserver)
-      @parser.nameservers[0].name.should == "dns2.srilankan.aero"
-      @parser.nameservers[1].should be_a(_nameserver)
-      @parser.nameservers[1].name.should == "dns1.srilankan.aero"
-      @parser.nameservers[2].should be_a(_nameserver)
-      @parser.nameservers[2].name.should == "s1.ns.slt.lk"
-      @parser.nameservers[3].should be_a(_nameserver)
-      @parser.nameservers[3].name.should == "s2.ns.slt.lk"
+      subject.created_on.should be_a(Time)
+      subject.created_on.should == Time.parse("2002-03-26 06:48:27 UTC")
+    end
+  end
+  describe "#updated_on" do
+    it do
+      subject.updated_on.should be_a(Time)
+      subject.updated_on.should == Time.parse("2013-04-09 06:35:03 UTC")
+    end
+  end
+  describe "#expires_on" do
+    it do
+      subject.expires_on.should be_a(Time)
+      subject.expires_on.should == Time.parse("2014-03-26 06:48:27 UTC")
+    end
+  end
+  describe "#registrar" do
+    it do
+      subject.registrar.should be_a(Whois::Record::Registrar)
+      subject.registrar.id.should           == "380"
+      subject.registrar.name.should         == "Tuonome IT"
+      subject.registrar.organization.should == nil
+      subject.registrar.url.should          == nil
+    end
+  end
+  describe "#registrant_contacts" do
+    it do
+      subject.registrant_contacts.should be_a(Array)
+      subject.registrant_contacts.should have(1).items
+      subject.registrant_contacts[0].should be_a(Whois::Record::Contact)
+      subject.registrant_contacts[0].type.should          == Whois::Record::Contact::TYPE_REGISTRANT
+      subject.registrant_contacts[0].id.should            == "C4526901-AERO"
+      subject.registrant_contacts[0].name.should          == "Domain Name Administrator"
+      subject.registrant_contacts[0].organization.should  == "SriLankan Airlines Ltd"
+      subject.registrant_contacts[0].address.should       == "Admin Bldg"
+      subject.registrant_contacts[0].city.should          == "Katunayaka"
+      subject.registrant_contacts[0].zip.should           == "11450"
+      subject.registrant_contacts[0].state.should         == "WP"
+      subject.registrant_contacts[0].country_code.should  == "LK"
+      subject.registrant_contacts[0].phone.should         == "+94.197331600"
+      subject.registrant_contacts[0].fax.should           == "+94.197335160"
+      subject.registrant_contacts[0].email.should         == "domregister@srilankan.aero"
+    end
+  end
+  describe "#admin_contacts" do
+    it do
+      subject.admin_contacts.should be_a(Array)
+      subject.admin_contacts.should have(1).items
+      subject.admin_contacts[0].should be_a(Whois::Record::Contact)
+      subject.admin_contacts[0].type.should          == Whois::Record::Contact::TYPE_ADMINISTRATIVE
+      subject.admin_contacts[0].id.should            == "C4526901-AERO"
+      subject.admin_contacts[0].name.should          == "Domain Name Administrator"
+      subject.admin_contacts[0].organization.should  == "SriLankan Airlines Ltd"
+      subject.admin_contacts[0].address.should       == "Admin Bldg"
+      subject.admin_contacts[0].city.should          == "Katunayaka"
+      subject.admin_contacts[0].zip.should           == "11450"
+      subject.admin_contacts[0].state.should         == "WP"
+      subject.admin_contacts[0].country_code.should  == "LK"
+      subject.admin_contacts[0].phone.should         == "+94.197331600"
+      subject.admin_contacts[0].fax.should           == "+94.197335160"
+      subject.admin_contacts[0].email.should         == "domregister@srilankan.aero"
+    end
+  end
+  describe "#technical_contacts" do
+    it do
+      subject.technical_contacts.should be_a(Array)
+      subject.technical_contacts.should have(1).items
+      subject.technical_contacts[0].should be_a(Whois::Record::Contact)
+      subject.technical_contacts[0].type.should          == Whois::Record::Contact::TYPE_TECHNICAL
+      subject.technical_contacts[0].id.should            == "C4526901-AERO"
+      subject.technical_contacts[0].name.should          == "Domain Name Administrator"
+      subject.technical_contacts[0].organization.should  == "SriLankan Airlines Ltd"
+      subject.technical_contacts[0].address.should       == "Admin Bldg"
+      subject.technical_contacts[0].city.should          == "Katunayaka"
+      subject.technical_contacts[0].zip.should           == "11450"
+      subject.technical_contacts[0].state.should         == "WP"
+      subject.technical_contacts[0].country_code.should  == "LK"
+      subject.technical_contacts[0].phone.should         == "+94.197331600"
+      subject.technical_contacts[0].fax.should           == "+94.197335160"
+      subject.technical_contacts[0].email.should         == "domregister@srilankan.aero"
+    end
+  end
+  describe "#nameservers" do
+    it do
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should have(4).items
+      subject.nameservers[0].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[0].name.should == "dns1.srilankan.aero"
+      subject.nameservers[1].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[1].name.should == "dns2.srilankan.aero"
+      subject.nameservers[2].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[2].name.should == "s2.ns.slt.lk"
+      subject.nameservers[3].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[3].name.should == "s1.ns.slt.lk"
     end
   end
 end

@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,53 +15,72 @@ require 'whois/record/parser/whois.nic.tl.rb'
 
 describe Whois::Record::Parser::WhoisNicTl, "status_registered.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.nic.tl/status_registered.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#domain" do
     it do
-      @parser.status.should == :registered
+      subject.domain.should == "google.tl"
     end
   end
-  context "#available?" do
+  describe "#domain_id" do
     it do
-      @parser.available?.should == false
+      subject.domain_id.should == "19785-CoCCA"
     end
   end
-  context "#registered?" do
+  describe "#status" do
     it do
-      @parser.registered?.should == true
+      subject.status.should == :registered
     end
   end
-  context "#created_on" do
+  describe "#available?" do
     it do
-      @parser.created_on.should be_a(Time)
-      @parser.created_on.should == Time.parse("2003-05-23")
+      subject.available?.should == false
     end
   end
-  context "#updated_on" do
+  describe "#registered?" do
     it do
-      @parser.updated_on.should be_a(Time)
-      @parser.updated_on.should == Time.parse("2009-08-05")
+      subject.registered?.should == true
     end
   end
-  context "#expires_on" do
+  describe "#created_on" do
     it do
-      @parser.expires_on.should be_a(Time)
-      @parser.expires_on.should == Time.parse("2010-05-23")
+      subject.created_on.should be_a(Time)
+      subject.created_on.should == Time.parse("2003-05-23 12:00:00 UTC")
     end
   end
-  context "#nameservers" do
+  describe "#updated_on" do
     it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should have(2).items
-      @parser.nameservers[0].should be_a(_nameserver)
-      @parser.nameservers[0].name.should == "ns1.google.com"
-      @parser.nameservers[1].should be_a(_nameserver)
-      @parser.nameservers[1].name.should == "ns2.google.com"
+      subject.updated_on.should be_a(Time)
+      subject.updated_on.should == Time.parse("2012-04-26 09:16:39 UTC")
+    end
+  end
+  describe "#expires_on" do
+    it do
+      subject.expires_on.should be_a(Time)
+      subject.expires_on.should == Time.parse("2013-05-23 12:00:00 UTC")
+    end
+  end
+  describe "#registrar" do
+    it do
+      subject.registrar.should be_a(Whois::Record::Registrar)
+      subject.registrar.id.should           == nil
+      subject.registrar.name.should         == "MarkMonitor"
+      subject.registrar.organization.should == nil
+      subject.registrar.url.should          == "http://www.markmonitor.com"
+    end
+  end
+  describe "#nameservers" do
+    it do
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should have(2).items
+      subject.nameservers[0].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[0].name.should == "ns1.google.com"
+      subject.nameservers[1].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[1].name.should == "ns2.google.com"
     end
   end
 end

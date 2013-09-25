@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,62 +15,137 @@ require 'whois/record/parser/whois.centralnic.com.rb'
 
 describe Whois::Record::Parser::WhoisCentralnicCom, "status_registered.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.centralnic.com/uk.com/status_registered.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#referral_whois" do
+  describe "#disclaimer" do
     it do
-      lambda { @parser.referral_whois }.should raise_error(Whois::PropertyNotSupported)
+      subject.disclaimer.should == "This whois service is provided by CentralNic Ltd and only contains information pertaining to Internet domain names we have registered for our customers. By using this service you are agreeing (1) not to use any information presented here for any purpose other than determining ownership of domain names, (2) not to store or reproduce this data in any way, (3) not to use any high-volume, automated, electronic processes to obtain data from this service. Abuse of this service is monitored and actions in contravention of these terms will result in being permanently blacklisted. All data is (c) CentralNic Ltd https://www.centralnic.com/"
     end
   end
-  context "#referral_url" do
+  describe "#domain" do
     it do
-      lambda { @parser.referral_url }.should raise_error(Whois::PropertyNotSupported)
+      subject.domain.should == "history.uk.com"
     end
   end
-  context "#status" do
+  describe "#domain_id" do
     it do
-      @parser.status.should == :registered
+      subject.domain_id.should == "CNIC-DO86293"
     end
   end
-  context "#available?" do
+  describe "#status" do
     it do
-      @parser.available?.should == false
+      subject.status.should == ["OK"]
     end
   end
-  context "#registered?" do
+  describe "#available?" do
     it do
-      @parser.registered?.should == true
+      subject.available?.should == false
     end
   end
-  context "#created_on" do
+  describe "#registered?" do
     it do
-      @parser.created_on.should be_a(Time)
-      @parser.created_on.should == Time.parse("2001-08-31")
+      subject.registered?.should == true
     end
   end
-  context "#updated_on" do
+  describe "#created_on" do
     it do
-      lambda { @parser.updated_on }.should raise_error(Whois::PropertyNotSupported)
+      subject.created_on.should be_a(Time)
+      subject.created_on.should == Time.parse("2001-08-31 11:50:57 UTC")
     end
   end
-  context "#expires_on" do
+  describe "#updated_on" do
     it do
-      @parser.expires_on.should be_a(Time)
-      @parser.expires_on.should == Time.parse("2011-08-31")
+      subject.updated_on.should be_a(Time)
+      subject.updated_on.should == Time.parse("2012-01-16 16:26:58 UTC")
     end
   end
-  context "#nameservers" do
+  describe "#expires_on" do
     it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should have(2).items
-      @parser.nameservers[0].should be_a(_nameserver)
-      @parser.nameservers[0].name.should == "ns1.myhostcp.com"
-      @parser.nameservers[1].should be_a(_nameserver)
-      @parser.nameservers[1].name.should == "ns2.myhostcp.com"
+      subject.expires_on.should be_a(Time)
+      subject.expires_on.should == Time.parse("2013-08-31 23:59:59 UTC")
+    end
+  end
+  describe "#registrar" do
+    it do
+      subject.registrar.should be_a(Whois::Record::Registrar)
+      subject.registrar.id.should           == "H78362"
+      subject.registrar.name.should         == nil
+      subject.registrar.organization.should == "E-VELOCITY LTD"
+      subject.registrar.url.should          == "http://www.e-velocity.co.uk/"
+    end
+  end
+  describe "#registrant_contacts" do
+    it do
+      subject.registrant_contacts.should be_a(Array)
+      subject.registrant_contacts.should have(1).items
+      subject.registrant_contacts[0].should be_a(Whois::Record::Contact)
+      subject.registrant_contacts[0].type.should          == Whois::Record::Contact::TYPE_REGISTRANT
+      subject.registrant_contacts[0].id.should            == "H1045821"
+      subject.registrant_contacts[0].name.should          == "Mr. Ray Hatley"
+      subject.registrant_contacts[0].organization.should  == nil
+      subject.registrant_contacts[0].address.should       == "Tallow House\n65-66 Lower Galdeford"
+      subject.registrant_contacts[0].city.should          == "Ludlow"
+      subject.registrant_contacts[0].zip.should           == "SY8 1RU"
+      subject.registrant_contacts[0].state.should         == "Shropshire"
+      subject.registrant_contacts[0].country.should       == nil
+      subject.registrant_contacts[0].country_code.should  == "GB"
+      subject.registrant_contacts[0].phone.should         == "+44.1584873633"
+      subject.registrant_contacts[0].fax.should           == nil
+      subject.registrant_contacts[0].email.should         == "ray@hatley.co.uk"
+    end
+  end
+  describe "#admin_contacts" do
+    it do
+      subject.admin_contacts.should be_a(Array)
+      subject.admin_contacts.should have(1).items
+      subject.admin_contacts[0].should be_a(Whois::Record::Contact)
+      subject.admin_contacts[0].type.should          == Whois::Record::Contact::TYPE_ADMINISTRATIVE
+      subject.admin_contacts[0].id.should            == "H305798"
+      subject.admin_contacts[0].name.should          == "Mr. Ray Hatley"
+      subject.admin_contacts[0].organization.should  == nil
+      subject.admin_contacts[0].address.should       == "Tallow House\n65-66 Lower Galdeford"
+      subject.admin_contacts[0].city.should          == "Ludlow"
+      subject.admin_contacts[0].zip.should           == "SY8 1RU"
+      subject.admin_contacts[0].state.should         == "Shropshire"
+      subject.admin_contacts[0].country.should       == nil
+      subject.admin_contacts[0].country_code.should  == "GB"
+      subject.admin_contacts[0].phone.should         == "+44.1584873633"
+      subject.admin_contacts[0].fax.should           == nil
+      subject.admin_contacts[0].email.should         == "ray@hatley.co.uk"
+    end
+  end
+  describe "#technical_contacts" do
+    it do
+      subject.technical_contacts.should be_a(Array)
+      subject.technical_contacts.should have(1).items
+      subject.technical_contacts[0].should be_a(Whois::Record::Contact)
+      subject.technical_contacts[0].type.should          == Whois::Record::Contact::TYPE_TECHNICAL
+      subject.technical_contacts[0].id.should            == "H78362"
+      subject.technical_contacts[0].name.should          == "Mr Simon Williams"
+      subject.technical_contacts[0].organization.should  == "E-VELOCITY LTD"
+      subject.technical_contacts[0].address.should       == "P.O Box 3295\nBrighton"
+      subject.technical_contacts[0].city.should          == nil
+      subject.technical_contacts[0].zip.should           == "BN50 9EY"
+      subject.technical_contacts[0].state.should         == nil
+      subject.technical_contacts[0].country.should       == nil
+      subject.technical_contacts[0].country_code.should  == "GB"
+      subject.technical_contacts[0].phone.should         == "+44.1273684969"
+      subject.technical_contacts[0].fax.should           == nil
+      subject.technical_contacts[0].email.should         == "simon@e-velocity.co.uk"
+    end
+  end
+  describe "#nameservers" do
+    it do
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should have(2).items
+      subject.nameservers[0].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[0].name.should == "ns38.eukdns.com"
+      subject.nameservers[1].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[1].name.should == "ns37.eukdns.com"
     end
   end
 end

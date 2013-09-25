@@ -3,7 +3,7 @@
 #
 # An intelligent pure Ruby WHOIS client and parser.
 #
-# Copyright (c) 2009-2011 Simone Carletti <weppos@weppos.net>
+# Copyright (c) 2009-2013 Simone Carletti <weppos@weppos.net>
 #++
 
 
@@ -27,11 +27,6 @@ module Whois
         property_not_supported :domain
 
         property_not_supported :domain_id
-
-
-        property_not_supported :referral_whois
-
-        property_not_supported :referral_url
 
 
         property_supported :status do

@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,53 +15,134 @@ require 'whois/record/parser/whois.afilias-grs.info.rb'
 
 describe Whois::Record::Parser::WhoisAfiliasGrsInfo, "status_registered.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.afilias-grs.info/sc/status_registered.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#disclaimer" do
     it do
-      @parser.status.should == ["CLIENT DELETE PROHIBITED", "CLIENT TRANSFER PROHIBITED", "CLIENT UPDATE PROHIBITED"]
+      subject.disclaimer.should == "Access to CCTLD WHOIS information is provided to assist persons in determining the contents of a domain name registration record in the Afilias registry database. The data in this record is provided by Afilias Limited for informational purposes only, and Afilias does not guarantee its accuracy.  This service is intended only for query-based access. You agree that you will use this data only for lawful purposes and that, under no circumstances will you use this data to: (a) allow, enable, or otherwise support the transmission by e-mail, telephone, or facsimile of mass unsolicited, commercial advertising or solicitations to entities other than the data recipient's own existing customers; or (b) enable high volume, automated, electronic processes that send queries or data to the systems of Registry Operator, a Registrar, or Afilias except as reasonably necessary to register domain names or modify existing registrations. All rights reserved. Afilias reserves the right to modify these terms at any time. By submitting this query, you agree to abide by this policy."
     end
   end
-  context "#available?" do
+  describe "#domain" do
     it do
-      @parser.available?.should == false
+      subject.domain.should == "google.sc"
     end
   end
-  context "#registered?" do
+  describe "#domain_id" do
     it do
-      @parser.registered?.should == true
+      subject.domain_id.should == "D47234-LRCC"
     end
   end
-  context "#created_on" do
+  describe "#status" do
     it do
-      @parser.created_on.should be_a(Time)
-      @parser.created_on.should == Time.parse("2004-02-03 19:19:12 UTC")
+      subject.status.should == ["CLIENT DELETE PROHIBITED", "CLIENT TRANSFER PROHIBITED", "CLIENT UPDATE PROHIBITED"]
     end
   end
-  context "#updated_on" do
+  describe "#available?" do
     it do
-      @parser.updated_on.should be_a(Time)
-      @parser.updated_on.should == Time.parse("2009-01-09 21:53:27 UTC")
+      subject.available?.should == false
     end
   end
-  context "#expires_on" do
+  describe "#registered?" do
     it do
-      @parser.expires_on.should be_a(Time)
-      @parser.expires_on.should == Time.parse("2010-02-03 19:19:12 UTC")
+      subject.registered?.should == true
     end
   end
-  context "#nameservers" do
+  describe "#created_on" do
     it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should have(2).items
-      @parser.nameservers[0].should be_a(_nameserver)
-      @parser.nameservers[0].name.should == "ns1.google.com"
-      @parser.nameservers[1].should be_a(_nameserver)
-      @parser.nameservers[1].name.should == "ns2.google.com"
+      subject.created_on.should be_a(Time)
+      subject.created_on.should == Time.parse("2004-02-03 19:19:12 UTC")
+    end
+  end
+  describe "#updated_on" do
+    it do
+      subject.updated_on.should be_a(Time)
+      subject.updated_on.should == Time.parse("2009-01-09 21:53:27 UTC")
+    end
+  end
+  describe "#expires_on" do
+    it do
+      subject.expires_on.should be_a(Time)
+      subject.expires_on.should == Time.parse("2010-02-03 19:19:12 UTC")
+    end
+  end
+  describe "#registrar" do
+    it do
+      subject.registrar.should be_a(Whois::Record::Registrar)
+      subject.registrar.id.should           == "R22-LRCC"
+      subject.registrar.name.should         == "MarkMonitor, Inc."
+      subject.registrar.organization.should == nil
+      subject.registrar.url.should          == nil
+    end
+  end
+  describe "#registrant_contacts" do
+    it do
+      subject.registrant_contacts.should be_a(Array)
+      subject.registrant_contacts.should have(1).items
+      subject.registrant_contacts[0].should be_a(Whois::Record::Contact)
+      subject.registrant_contacts[0].type.should         == Whois::Record::Contact::TYPE_REGISTRANT
+      subject.registrant_contacts[0].id.should           == "AGRS-129819"
+      subject.registrant_contacts[0].name.should         == "DNS Admin"
+      subject.registrant_contacts[0].organization.should == "Google Inc."
+      subject.registrant_contacts[0].address.should      == "1600 Amphitheatre Parkway"
+      subject.registrant_contacts[0].city.should         == "Mountain View"
+      subject.registrant_contacts[0].zip.should          == "94043"
+      subject.registrant_contacts[0].state.should        == "CA"
+      subject.registrant_contacts[0].country_code.should == "US"
+      subject.registrant_contacts[0].phone.should        == "+1.6502530000"
+      subject.registrant_contacts[0].fax.should          == "+1.6506188571"
+      subject.registrant_contacts[0].email.should        == "dns-admin@google.com"
+    end
+  end
+  describe "#admin_contacts" do
+    it do
+      subject.admin_contacts.should be_a(Array)
+      subject.admin_contacts.should have(1).items
+      subject.admin_contacts[0].should be_a(Whois::Record::Contact)
+      subject.admin_contacts[0].type.should         == Whois::Record::Contact::TYPE_ADMINISTRATIVE
+      subject.admin_contacts[0].id.should           == "AGRS-129293"
+      subject.admin_contacts[0].name.should         == "CCOPS"
+      subject.admin_contacts[0].organization.should == "MarkMonitor"
+      subject.admin_contacts[0].address.should      == "PMB 155\n10400 Overland Rd."
+      subject.admin_contacts[0].city.should         == "Boise"
+      subject.admin_contacts[0].zip.should          == "83709-1433"
+      subject.admin_contacts[0].state.should        == "ID"
+      subject.admin_contacts[0].country_code.should == "US"
+      subject.admin_contacts[0].phone.should        == "+1.20838957"
+      subject.admin_contacts[0].fax.should          == "+1.20838957"
+      subject.admin_contacts[0].email.should        == "ccops@markmonitor.com"
+    end
+  end
+  describe "#technical_contacts" do
+    it do
+      subject.technical_contacts.should be_a(Array)
+      subject.technical_contacts.should have(1).items
+      subject.technical_contacts[0].should be_a(Whois::Record::Contact)
+      subject.technical_contacts[0].type.should         == Whois::Record::Contact::TYPE_TECHNICAL
+      subject.technical_contacts[0].id.should           == "AGRS-129293"
+      subject.technical_contacts[0].name.should         == "CCOPS"
+      subject.technical_contacts[0].organization.should == "MarkMonitor"
+      subject.technical_contacts[0].address.should      == "PMB 155\n10400 Overland Rd."
+      subject.technical_contacts[0].city.should         == "Boise"
+      subject.technical_contacts[0].zip.should          == "83709-1433"
+      subject.technical_contacts[0].state.should        == "ID"
+      subject.technical_contacts[0].country_code.should == "US"
+      subject.technical_contacts[0].phone.should        == "+1.20838957"
+      subject.technical_contacts[0].fax.should          == "+1.20838957"
+      subject.technical_contacts[0].email.should        == "ccops@markmonitor.com"
+    end
+  end
+  describe "#nameservers" do
+    it do
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should have(2).items
+      subject.nameservers[0].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[0].name.should == "ns1.google.com"
+      subject.nameservers[1].should be_a(Whois::Record::Nameserver)
+      subject.nameservers[1].name.should == "ns2.google.com"
     end
   end
 end

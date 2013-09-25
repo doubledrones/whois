@@ -7,7 +7,7 @@
 #
 # and regenerate the tests with the following rake task
 #
-#   $ rake genspec:parsers
+#   $ rake spec:generate
 #
 
 require 'spec_helper'
@@ -15,51 +15,51 @@ require 'whois/record/parser/whois.co.ca.rb'
 
 describe Whois::Record::Parser::WhoisCoCa, "status_available.expected" do
 
-  before(:each) do
+  subject do
     file = fixture("responses", "whois.co.ca/status_available.txt")
     part = Whois::Record::Part.new(:body => File.read(file))
-    @parser = klass.new(part)
+    described_class.new(part)
   end
 
-  context "#status" do
+  describe "#status" do
     it do
-      @parser.status.should == :available
+      subject.status.should == :available
     end
   end
-  context "#available?" do
+  describe "#available?" do
     it do
-      @parser.available?.should == true
+      subject.available?.should == true
     end
   end
-  context "#registered?" do
+  describe "#registered?" do
     it do
-      @parser.registered?.should == false
+      subject.registered?.should == false
     end
   end
-  context "#created_on" do
+  describe "#created_on" do
     it do
-      @parser.created_on.should == nil
+      subject.created_on.should == nil
     end
   end
-  context "#updated_on" do
+  describe "#updated_on" do
     it do
-      lambda { @parser.updated_on }.should raise_error(Whois::PropertyNotSupported)
+      lambda { subject.updated_on }.should raise_error(Whois::AttributeNotSupported)
     end
   end
-  context "#expires_on" do
+  describe "#expires_on" do
     it do
-      @parser.expires_on.should == nil
+      subject.expires_on.should == nil
     end
   end
-  context "#nameservers" do
+  describe "#nameservers" do
     it do
-      @parser.nameservers.should be_a(Array)
-      @parser.nameservers.should == []
+      subject.nameservers.should be_a(Array)
+      subject.nameservers.should == []
     end
   end
-  context "#reserved?" do
+  describe "#reserved?" do
     it do
-      @parser.reserved?.should == false
+      subject.reserved?.should == false
     end
   end
 end

@@ -3,80 +3,36 @@
 #
 # An intelligent pure Ruby WHOIS client and parser.
 #
-# Copyright (c) 2009-2011 Simone Carletti <weppos@weppos.net>
+# Copyright (c) 2009-2013 Simone Carletti <weppos@weppos.net>
 #++
 
 
-require 'whois/record/parser/base'
+require 'whois/record/parser/base_whoisd'
+require 'whois/record/scanners/whois.nic.cz.rb'
 
 
 module Whois
   class Record
     class Parser
 
-      #
-      # = whois.nic.cz parser
-      #
       # Parser for the whois.nic.cz server.
       #
-      # NOTE: This parser is just a stub and provides only a few basic methods
-      # to check for domain availability and get domain status.
-      # Please consider to contribute implementing missing methods.
-      # See WhoisNicIt parser for an explanation of all available methods
-      # and examples.
+      # @see Whois::Record::Parser::Example
+      #   The Example parser for the list of all available methods.
       #
-      class WhoisNicCz < Base
+      class WhoisNicCz < BaseWhoisd
 
-        property_supported :status do
-          if content_for_scanner =~ /status:\s+(.+)\n/
-            case $1.downcase
-              when "paid and in zone" then :registered
-              # NEWSTATUS
-              when "expired" then :expired
-              else
-                Whois.bug!(ParserError, "Unknown status `#{$1}'.")
-            end
-          else
-            :available
-          end
-        end
+        self.scanner = Scanners::WhoisNicCz
 
-        property_supported :available? do
-          !!(content_for_scanner =~ /^%ERROR:101: no entries found/)
-        end
+        self.status_mapping = {
+          "paid and in zone" => :registered,
+          "update prohibited" => :registered,
+          "expired" => :expired,
+          "to be deleted" => :expired,
+        }
 
-        property_supported :registered? do
-          !available?
-        end
-
-
-        property_supported :created_on do
-          if content_for_scanner =~ /registered:\s+(.+?)\n/
-            Time.parse($1)
-          end
-        end
-
-        property_supported :updated_on do
-          if content_for_scanner =~ /changed:\s+(.+?)\n/
-            Time.parse($1)
-          end
-        end
-
-        property_supported :expires_on do
-          if content_for_scanner =~ /expire:\s+(.+?)\n/
-            Time.parse($1)
-          end
-        end
-
-
-        property_supported :nameservers do
-          content_for_scanner.scan(/nserver:\s+(.+)\n/).flatten.map do |line|
-            if line =~ /(.+) \((.+)\)/
-              Record::Nameserver.new($1, $2)
-            else
-              Record::Nameserver.new(line.strip)
-            end
-          end
+        def response_throttled?
+          !!node("response:throttled")
         end
 
       end
